@@ -291,6 +291,7 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Architecture</span>
       <button class="btn btn-danger btn-xs" onclick="resetBehavior()">Reset</button>
+      <span id="bw-save-indicator" style="font-size:12px;margin-left:8px"></span>
     </div>
 
     <!-- Layer 1: Cognitive Loop -->
@@ -601,8 +602,12 @@ async function loadBehavior(){
   }catch{}
 }
 async function saveBehavior(key,val){
-  const d=await fetch(B+'/config/behavior',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:parseFloat(val)})}).then(r=>r.json());
-  document.getElementById('system-prompt-preview').textContent=d.system_prompt_preview;
+  const ind=document.getElementById('bw-save-indicator');
+  try{
+    const d=await fetch(B+'/config/behavior',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:parseFloat(val)})}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});
+    document.getElementById('system-prompt-preview').textContent=d.system_prompt_preview;
+    if(ind){ind.textContent='Saved';ind.style.color='var(--green)';setTimeout(()=>ind.textContent='',1500);}
+  }catch(e){if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}}
 }
 async function resetBehavior(){await fetch(B+'/config/behavior/reset',{method:'POST'});loadBehavior();}
 /* ── TELEMETRY ── */
