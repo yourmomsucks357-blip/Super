@@ -4,6 +4,15 @@ set -e
 LOGDIR="/tmp/super-logs"
 mkdir -p "$LOGDIR"
 
+# Download cloudflared binary if not present
+CF_BIN="/workspaces/Super/cloudflared"
+if [ ! -f "$CF_BIN" ]; then
+    echo "[Setup] Downloading cloudflared..."
+    curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64" -o "$CF_BIN"
+    chmod +x "$CF_BIN"
+    echo "[Setup] cloudflared downloaded."
+fi
+
 cleanup() {
     echo "Stopping..."
     kill $API_PID $CF_PID 2>/dev/null
