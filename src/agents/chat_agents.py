@@ -58,7 +58,7 @@ def _search_youtube(query: str, max_results: int = 5) -> List[Dict]:
         return [{"error": str(exc)}]
 
 
-def _deploy_youtube_learner(url: str, subject: str) -> Dict:
+def _deploy_youtube_learner(url: str, subject: str = "") -> Dict:
     from src.jobs.models import Job
     from src.jobs.queue import job_queue
     job = Job(agent_type="youtube_learner", kwargs={"url": url, "subject": subject})
