@@ -63,8 +63,9 @@ class YouTubeLearningAgent(BaseAgent):
         video_id = _extract_video_id(url)
         canonical_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[language])
-        full_text = " ".join(entry["text"] for entry in transcript)
+        api = YouTubeTranscriptApi()
+        transcript = api.fetch(video_id, languages=[language])
+        full_text = " ".join(entry.text for entry in transcript)
 
         # Subject is the primary retrieval key — stored as title + tag so the
         # memory retriever finds this knowledge when that topic is queried.
