@@ -375,7 +375,7 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
 
 </main>
 <script>
-const B='';let activeView='builder',selectedAgent='assistant',sessionId=crypto.randomUUID(),ws=null;
+const B='https://laughing-tribble-69j5j9rw6qxpcrq9r-8000.app.github.dev';let activeView='builder',selectedAgent='assistant',sessionId=crypto.randomUUID(),ws=null;
 let nodes=[],edges=[],selectedNodeId=null,dragState=null,connectState=null,currentWorkflowId=null;
 const NC={start:{bg:'#1a4731',fg:'var(--green)',icon:'▶'},memory_retrieval:{bg:'#2a1a4f',fg:'var(--purple)',icon:'⧖'},agent:{bg:'#1a2d4f',fg:'var(--blue)',icon:'⚙'},outcome_judgment:{bg:'#2d2a1a',fg:'var(--yellow)',icon:'⚖'},condition:{bg:'#21262d',fg:'var(--text2)',icon:'◇'},loop:{bg:'#21262d',fg:'var(--text2)',icon:'↺'},human_approval:{bg:'#3d1a1a',fg:'var(--red)',icon:'✋'},fail_branch:{bg:'#3d1a1a',fg:'var(--red)',icon:'⚠'},safla_consolidation:{bg:'#1a2d4f',fg:'var(--blue)',icon:'∑'}};
 function uid(){return Math.random().toString(36).slice(2,9)}
