@@ -3,12 +3,12 @@ YouTube Learning Agent — fetches a video transcript and stores it in
 AssociativeMemory so the knowledge is available to the cognitive loop
 and retrievable via the /memory API.
 """
-import os
 import re
 from typing import Any, List
 
 from src.agents.base import AgentContext, BaseAgent
 from src.agents.registry import AgentRegistry
+from src.config import settings
 from src.memory.models import MemoryItem
 from src.memory.store import associative_store
 
@@ -64,7 +64,7 @@ class YouTubeLearningAgent(BaseAgent):
         video_id = _extract_video_id(url)
         canonical_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        proxy_url = os.environ.get("YOUTUBE_PROXY_URL")
+        proxy_url = settings.youtube_proxy_url
         proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
         api = YouTubeTranscriptApi(proxies=proxies)
 

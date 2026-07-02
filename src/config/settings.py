@@ -63,5 +63,8 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 1024
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
+    # YouTube agent — proxy to bypass cloud IP blocks (e.g. http://user:pass@host:port)
+    youtube_proxy_url: Optional[str] = None
+
 
 settings = Settings()
