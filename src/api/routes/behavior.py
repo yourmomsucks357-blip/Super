@@ -40,7 +40,12 @@ async def update_behavior(req: BehaviorUpdateRequest):
 
 @router.post("/reset")
 async def reset_behavior():
-    from src.config.runtime import BehaviorConfig
-    behavior.__dict__.update(BehaviorConfig().__dict__)
-    behavior.apply({})
+    behavior.apply({
+        "temperature": 0.7, "max_tokens": 1024,
+        "safety_weight": 0.8, "factuality_weight": 0.8,
+        "truthfulness_weight": 1.0, "refusal_threshold": 0.1,
+        "safla_learning_rate": 0.1, "safla_confidence_floor": 0.05,
+        "retrieval_similarity": 0.5, "retrieval_confidence": 0.3,
+        "retrieval_usage": 0.2,
+    })
     return behavior.to_dict()

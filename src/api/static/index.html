@@ -261,6 +261,13 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
         <select id="run-priority"><option value="vip">VIP</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select>
       </div>
       <div style="flex:1;min-width:200px"><label>kwargs (JSON)</label><textarea id="run-kwargs" rows="2">{}</textarea></div>
+      <script>
+        const _KWARGS_EXAMPLES={echo:'{"message":"hello"}',sleep:'{"seconds":1}',compute:'{"numbers":[1,2,3,4,5]}',assistant:'{}',router:'{}'};
+        document.addEventListener('DOMContentLoaded',()=>{
+          const sel=document.getElementById('run-agent-type');
+          if(sel)sel.addEventListener('change',()=>{const ex=_KWARGS_EXAMPLES[sel.value];if(ex)document.getElementById('run-kwargs').value=ex;});
+        });
+      </script>
       <div class="flex gap-8">
         <button class="btn btn-primary" onclick="runAgent()">Run Now</button>
         <button class="btn btn-secondary" onclick="enqueueJob()">Enqueue</button>
@@ -553,7 +560,7 @@ async function sendChat(){const i=document.getElementById('msg-input'),m=i.value
 /* ── AGENTS ── */
 async function loadAgentTypes(){try{const t=await fetch(B+'/agents/types').then(r=>r.json());
   const ch=document.getElementById('agent-chips');if(ch)ch.innerHTML=t.map(x=>`<button class="agent-chip${x===selectedAgent?' active':''}" onclick="pickAgent('${x}')">${x}</button>`).join('');
-  const sl=document.getElementById('run-agent-type');if(sl)sl.innerHTML=t.map(x=>`<option value="${x}">${x}</option>`).join('');}catch{}}
+  const sl=document.getElementById('run-agent-type');if(sl){sl.innerHTML=t.map(x=>`<option value="${x}">${x}</option>`).join('');const ex=_KWARGS_EXAMPLES[sl.value];if(ex)document.getElementById('run-kwargs').value=ex;}}catch{}}
 function pickAgent(t){selectedAgent=t;document.querySelectorAll('.agent-chip').forEach(b=>b.classList.toggle('active',b.textContent===t));connectWS();}
 
 /* ── JOBS ── */
