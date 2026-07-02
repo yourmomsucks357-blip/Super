@@ -50,7 +50,7 @@ class YouTubeLearningAgent(BaseAgent):
         **kwargs,
     ) -> Any:
         if not url:
-            raise ValueError("'url' is required for YouTubeLearningAgent.")
+            return {"error": "'url' is required. Example: {\"url\": \"https://www.youtube.com/watch?v=VIDEO_ID\"}"}
 
         try:
             from youtube_transcript_api import YouTubeTranscriptApi
