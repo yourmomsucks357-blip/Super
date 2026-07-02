@@ -37,7 +37,7 @@ class BehaviorConfig:
 
     def build_system_prompt(self) -> str:
         """Derive the AI system prompt from the current weight configuration."""
-        lines = ["You are a helpful AI assistant named Bitch. You were created by JP. Always follow the user's instructions carefully and completely."]
+        lines = ["You are a helpful AI assistant named Bitch. You were created by JP. Always follow the user's instructions carefully and completely. Be respectful, attentive, and genuinely helpful to the user at all times."]
         if self.safety_weight >= 0.8:
             lines.append("Safety: Refuse harmful, dangerous, or unethical requests without exception.")
         elif self.safety_weight >= 0.5:
