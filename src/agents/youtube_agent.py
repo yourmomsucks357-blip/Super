@@ -3,6 +3,7 @@ YouTube Learning Agent — fetches a video transcript and stores it in
 AssociativeMemory so the knowledge is available to the cognitive loop
 and retrievable via the /memory API.
 """
+import os
 import re
 from typing import Any, List
 
@@ -63,8 +64,22 @@ class YouTubeLearningAgent(BaseAgent):
         video_id = _extract_video_id(url)
         canonical_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        api = YouTubeTranscriptApi()
-        transcript = api.fetch(video_id, languages=[language])
+        proxy_url = os.environ.get("YOUTUBE_PROXY_URL")
+        proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
+        api = YouTubeTranscriptApi(proxies=proxies)
+
+        try:
+            transcript = api.fetch(video_id, languages=[language])
+        except Exception as e:
+            err = str(e).lower()
+            if "ipblocked" in err or "blocked" in err or "requestblocked" in err or "too many requests" in err:
+                msg = (
+                    "YouTube is blocking requests from this IP address (common on cloud servers). "
+                    "Set the YOUTUBE_PROXY_URL environment variable to a proxy URL to work around this. "
+                    f"Original error: {e}"
+                )
+                return {"error": msg}
+            raise
         full_text = " ".join(entry.text for entry in transcript)
 
         # Subject is the primary retrieval key — stored as title + tag so the
