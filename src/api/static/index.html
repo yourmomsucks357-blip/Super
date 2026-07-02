@@ -730,7 +730,7 @@ async function loadTelemetry(){try{const[st,ev]=await Promise.all([fetch(B+'/tel
 
 </main>
 <script>
-const BASE = '';
+const BASE = 'https://laughing-tribble-69j5j9rw6qxpcrq9r-8000.app.github.dev';
 let currentTab = 'chat';
 let selectedAgent = 'assistant';
 let sessionId = crypto.randomUUID();
@@ -798,8 +798,8 @@ function newSession() {
 
 function connectWS() {
   if (ws) { ws.close(); ws = null; }
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  ws = new WebSocket(`${proto}://${location.host}/chat/ws/${sessionId}?agent_type=${selectedAgent}`);
+  const wsBase = BASE.replace(/^http/, 'ws');
+  ws = new WebSocket(`${wsBase}/chat/ws/${sessionId}?agent_type=${selectedAgent}`);
   ws.onmessage = e => {
     const d = JSON.parse(e.data);
     appendMsg('assistant', d.reply);
