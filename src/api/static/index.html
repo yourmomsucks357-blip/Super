@@ -104,8 +104,14 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
 .msg.user{align-self:flex-end;background:var(--blue-btn);color:#fff;border-bottom-right-radius:3px}
 .msg.assistant{align-self:flex-start;background:#21262d;border:1px solid var(--border);border-bottom-left-radius:3px}
 .msg.system{align-self:center;background:none;color:var(--muted);font-size:12px;font-style:italic}
-.chat-footer{padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px}
+.chat-footer{padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .chat-footer input{flex:1}
+.chat-upload-btn{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:38px;border-radius:8px;border:1px solid var(--border);background:#21262d;color:var(--text2);cursor:pointer}
+.chat-upload-btn:hover{border-color:var(--blue-btn);color:var(--blue)}
+.chat-upload-preview{display:flex;align-items:center;gap:8px;min-width:100%;padding-top:6px}
+.chat-upload-preview img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.chat-upload-preview span{font-size:12px;color:var(--muted)}
+.chat-upload-preview button{margin-left:auto}
 
 /* ── Jobs ── */
 #jobs-view{flex-direction:column;padding:20px;gap:16px;overflow-y:auto}
@@ -235,6 +241,9 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
 <!-- CHAT -->
 <div class="view" id="chat-view">
   <div class="chat-aside">
+    <h4>Main Brain</h4>
+    <button class="agent-chip active" data-agent="assistant" onclick="pickAgent('assistant')">Main Brain</button>
+    <div class="divider"></div>
     <h4>Agents</h4>
     <div id="agent-chips"></div>
     <div class="divider"></div>
@@ -245,8 +254,11 @@ td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
   <div class="chat-body">
     <div class="messages" id="messages"><div class="msg system">Select an agent and start chatting.</div></div>
     <div class="chat-footer">
-      <input id="msg-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <label class="chat-upload-btn" for="chat-image-input" title="Upload image">+</label>
+      <input id="chat-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="uploadChatImage(event)"/>
+      <input id="msg-input" placeholder="Type a message… or /agent compute {&quot;numbers&quot;:[1,2,3]}" onkeydown="if(event.key==='Enter')sendChat()"/>
       <button class="btn btn-primary" onclick="sendChat()">Send</button>
+      <div id="chat-upload-preview" class="chat-upload-preview" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -528,11 +540,11 @@ function renderMemory(){
 function mcrd(name,count,color,desc){return `<div class="card" style="flex:1;min-width:160px"><div style="font-size:26px;font-weight:700;color:${color}">${count}</div><div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:2px">${name}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${desc}</div></div>`;}
 function miCard(item){
   const c=item.confidence||0,cc=c>=.65?'conf-high':c>=.35?'conf-mid':'conf-low';
-  const tl=item.is_guardrail?'guardrail':(item.tier||'item'),tc=item.is_guardrail?'pill-red':'pill-blue';
+  const tl=item.kind==='guardrail'?'negative guardrail':(item.kind==='strategy'?'strategy':(item.is_guardrail?'guardrail':(item.tier||'item'))),tc=(item.kind==='guardrail'||item.is_guardrail)?'pill-red':'pill-blue';
   return `<div class="mem-card"><div class="mem-card-title"><span class="pill ${tc}">${tl}</span>${item.title}</div>
   <div class="mem-card-content">${(item.content||'').slice(0,120)}${(item.content||'').length>120?'…':''}</div>
   <div class="safla-bar" style="margin-bottom:8px"><span style="font-size:11px;color:var(--muted);width:60px">Conf: ${(c*100).toFixed(0)}%</span><div class="safla-track"><div class="safla-fill ${cc}" style="width:${c*100}%"></div></div></div>
-  <div class="mem-tags">${(item.tags||[]).map(t=>`<span class="mem-tag">${t}</span>`).join('')}${item.usage_count!==undefined?`<span class="mem-tag">used ${item.usage_count}×</span>`:''}</div>
+  <div class="mem-tags">${(item.tags||[]).filter(t=>!(tl==='negative guardrail'&&t==='failure')).map(t=>`<span class="mem-tag">${t}</span>`).join('')}${item.usage_count!==undefined?`<span class="mem-tag">used ${item.usage_count}×</span>`:''}</div>
   <div class="flex gap-8" style="margin-top:8px"><button class="btn btn-secondary btn-xs" onclick="saflaDo('${item.item_id}','success')">✓</button><button class="btn btn-danger btn-xs" onclick="saflaDo('${item.item_id}','failure')">✗</button></div></div>`;
 }
 async function addMemItem(){
@@ -547,17 +559,21 @@ async function consolidateMem(){const r=await fetch(B+'/memory/experiential/cons
 async function clearWorking(){await fetch(B+'/memory/working',{method:'DELETE'});loadMemory();}
 
 /* ── CHAT ── */
+let pendingChatImage=null;
 function newSession(){sessionId=crypto.randomUUID();document.getElementById('session-label').textContent=sessionId.slice(0,8)+'…';document.getElementById('messages').innerHTML='<div class="msg system">New session.</div>';connectWS();}
 function connectWS(){if(ws){ws.close();ws=null;}const p=location.protocol==='https:'?'wss':'ws';try{ws=new WebSocket(`${p}://${location.host}/chat/ws/${sessionId}?agent_type=${selectedAgent}`);ws.onmessage=e=>{const d=JSON.parse(e.data);aMsg('assistant',d.reply);};}catch{}}
 function aMsg(r,t){const b=document.getElementById('messages'),d=document.createElement('div');d.className='msg '+r;d.textContent=t;b.appendChild(d);b.scrollTop=b.scrollHeight;}
-async function sendChat(){const i=document.getElementById('msg-input'),m=i.value.trim();if(!m)return;i.value='';aMsg('user',m);
+function renderChatImagePreview(){const p=document.getElementById('chat-upload-preview');if(!pendingChatImage){p.style.display='none';p.innerHTML='';return;}p.style.display='flex';p.innerHTML=`<img src="${pendingChatImage.url}" alt="upload preview"/><span>${pendingChatImage.name}</span><button class="btn btn-secondary btn-xs" onclick="clearChatImage()">Clear</button>`;}
+function clearChatImage(){pendingChatImage=null;document.getElementById('chat-image-input').value='';renderChatImagePreview();}
+async function uploadChatImage(event){const file=event.target.files&&event.target.files[0];if(!file)return;const fd=new FormData();fd.append('file',file);try{const r=await fetch(B+'/uploads/image',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Upload failed');pendingChatImage={url:d.url,name:file.name};renderChatImagePreview();}catch(e){aMsg('system','[Upload error: '+e.message+']');clearChatImage();}}
+async function sendChat(){const i=document.getElementById('msg-input');let m=i.value.trim();if(!m&&!pendingChatImage)return;if(pendingChatImage){m=(m?m+'\n':'')+`Attached image: ${location.origin}${pendingChatImage.url}`;}i.value='';aMsg('user',m||'[Image uploaded]');clearChatImage();
   if(ws&&ws.readyState===WebSocket.OPEN){ws.send(m);}else{try{const r=await fetch(B+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId,agent_type:selectedAgent,message:m})});const d=await r.json();aMsg('assistant',d.reply);}catch(e){aMsg('system','[Error: '+e.message+']');}}}
 
 /* ── AGENTS ── */
 async function loadAgentTypes(){try{const t=await fetch(B+'/agents/types').then(r=>r.json());
-  const ch=document.getElementById('agent-chips');if(ch)ch.innerHTML=t.map(x=>`<button class="agent-chip${x===selectedAgent?' active':''}" onclick="pickAgent('${x}')">${x}</button>`).join('');
+  const ch=document.getElementById('agent-chips');if(ch)ch.innerHTML=t.map(x=>`<button class="agent-chip${x===selectedAgent?' active':''}" data-agent="${x}" onclick="pickAgent('${x}')">${x==='assistant'?'Main Brain':x}</button>`).join('');
   const sl=document.getElementById('run-agent-type');if(sl){sl.innerHTML=t.map(x=>`<option value="${x}">${x}</option>`).join('');fillKwargs(sl.value);}}catch{}}
-function pickAgent(t){selectedAgent=t;document.querySelectorAll('.agent-chip').forEach(b=>b.classList.toggle('active',b.textContent===t));connectWS();}
+function pickAgent(t){selectedAgent=t;document.querySelectorAll('.agent-chip').forEach(b=>b.classList.toggle('active',b.dataset.agent===t));connectWS();}
 
 /* ── JOBS ── */
 async function runAgent(){const at=document.getElementById('run-agent-type').value,p=document.getElementById('run-priority').value;let kw={};try{kw=JSON.parse(document.getElementById('run-kwargs').value||'{}');}catch{}

@@ -48,10 +48,12 @@ def extract_guardrail(strategy: ExperientialStrategy) -> ExperientialStrategy:
         title=f"[GUARDRAIL] {strategy.title}",
         description=strategy.description,
         content=f"Avoid: {strategy.content}",
-        tags=strategy.tags + ["guardrail", "failure"],
+        tags=strategy.tags + ["guardrail"],
         confidence=settings.safla_initial_confidence,
-        outcome=MemoryOutcome.FAILURE,
+        outcome=MemoryOutcome.GUARDRAIL,
+        kind="guardrail",
         is_guardrail=True,
         task_pattern=strategy.task_pattern or strategy.title,
+        metadata={**strategy.metadata, "source_outcome": MemoryOutcome.FAILURE.value},
     )
     return guardrail

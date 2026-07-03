@@ -15,6 +15,7 @@ class MemoryTier(str, Enum):
 class MemoryOutcome(str, Enum):
     SUCCESS = "success"
     FAILURE = "failure"
+    GUARDRAIL = "guardrail"
 
 
 @dataclass
@@ -41,6 +42,7 @@ class ExperientialStrategy(MemoryItem):
     tier:         MemoryTier    = field(default=MemoryTier.EXPERIENTIAL)
     description:  str           = ""    # contextual scenario
     outcome:      MemoryOutcome = MemoryOutcome.SUCCESS
+    kind:         str           = "strategy"  # strategy | guardrail
     is_guardrail: bool          = False # True = extracted from failure path
     task_pattern: str           = ""    # user-stripped generalised failure pattern
 

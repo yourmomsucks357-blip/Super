@@ -1,10 +1,15 @@
 import json
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 from .chat import BaseChatAgent, ChatSession
+from .base import AgentContext, AgentStatus
+from .executor import executor
 from .registry import AgentRegistry
 from src.config import settings
 from src.config.runtime import behavior
 from src.cognitive.loop import CognitiveLoop, CognitiveDecision
+from src.workflow.registry import WorkflowRegistry
+from src.workflow.engine import workflow_engine
 
 
 # ── Tool definitions passed to the LLM ───────────────────────────────────────
@@ -28,6 +33,30 @@ _TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "call_agent",
+            "description": "Call another registered agent and return its result.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_type": {"type": "string", "description": "Registered agent type to call"},
+                    "message": {"type": "string", "description": "Optional message for chat agents"},
+                    "kwargs": {"type": "object", "description": "Keyword arguments passed to the agent"},
+                },
+                "required": ["agent_type"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_agents",
+            "description": "List the currently registered agent types.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "deploy_youtube_learner",
             "description": "Queue a youtube_learner agent to fetch and store the transcript of a video as knowledge under a subject.",
             "parameters": {
@@ -37,6 +66,29 @@ _TOOLS = [
                     "subject": {"type": "string", "description": "Subject/topic label for the stored knowledge"},
                 },
                 "required": ["url", "subject"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_workflows",
+            "description": "List all saved workflows available in the system.",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "run_workflow",
+            "description": "Start execution of a specific workflow by its ID.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "workflow_id": {"type": "string", "description": "The unique ID of the workflow to run"},
+                    "inputs": {"type": "object", "description": "Optional input variables for the workflow"},
+                },
+                "required": ["workflow_id"],
             },
         },
     },
@@ -66,9 +118,70 @@ def _deploy_youtube_learner(url: str, subject: str = "") -> Dict:
     return {"job_id": job.job_id, "url": url, "subject": subject, "status": "queued"}
 
 
+async def _call_agent(agent_type: str, message: str = "", kwargs: Optional[Dict[str, Any]] = None) -> Dict:
+    kwargs = kwargs or {}
+    try:
+        agent = AgentRegistry.create(agent_type)
+    except KeyError as exc:
+        return {"error": str(exc)}
+
+    context = AgentContext(agent_id=agent.agent_id, metadata={"invoked_by": "assistant"})
+    try:
+        if isinstance(agent, BaseChatAgent):
+            session = ChatSession(session_id=str(uuid.uuid4()))
+            chat_message = message or kwargs.pop("message", "") or kwargs.pop("prompt", "")
+            result = await executor.run(agent, context, session=session, message=chat_message, **kwargs)
+        else:
+            result = await executor.run(agent, context, **kwargs)
+    except Exception as exc:
+        return {"agent_type": agent_type, "status": "failed", "error": str(exc)}
+
+    payload = {
+        "agent_type": agent_type,
+        "status": result.status.value,
+        "run_id": result.run_id,
+        "output": result.output,
+        "error": result.error,
+    }
+    if result.status == AgentStatus.COMPLETED:
+        payload["status"] = "completed"
+    return payload
+
+
+def _list_agents() -> Dict:
+    return {"agents": AgentRegistry.list_types()}
+
+
+def _list_workflows() -> Dict:
+    return {
+        "workflows": [
+            {"id": w.workflow_id, "name": w.name, "description": w.description}
+            for w in WorkflowRegistry.list_all()
+        ]
+    }
+
+
+async def _run_workflow(workflow_id: str, inputs: Optional[Dict] = None) -> Dict:
+    config = WorkflowRegistry.get(workflow_id)
+    if not config:
+        return {"error": f"Workflow '{workflow_id}' not found"}
+    
+    run = await workflow_engine.run(config, inputs=inputs)
+    return {
+        "run_id": run.run_id,
+        "status": run.status,
+        "outputs": run.outputs,
+        "error": run.error
+    }
+
+
 _TOOL_HANDLERS = {
     "search_youtube":        lambda args: _search_youtube(**args),
+    "call_agent":            lambda args: _call_agent(**args),
+    "list_agents":           lambda args: _list_agents(),
     "deploy_youtube_learner": lambda args: _deploy_youtube_learner(**args),
+    "list_workflows":        lambda args: _list_workflows(),
+    "run_workflow":          lambda args: _run_workflow(**args),
 }
 
 
@@ -84,7 +197,7 @@ class AssistantAgent(BaseChatAgent):
             loop = CognitiveLoop()
             state = loop.evaluate(
                 objective=message,
-                available_agents=["assistant"],
+                available_agents=AgentRegistry.list_types(),
                 execution_state={},
             )
             if state.decision == CognitiveDecision.ABORT:
@@ -94,6 +207,7 @@ class AssistantAgent(BaseChatAgent):
 
         # ── Build system prompt from weights ──────────────────────────
         system_prompt = behavior.build_system_prompt()
+        print(f"DEBUG: Using System Prompt: {system_prompt}")
 
         # ── OpenRouter ────────────────────────────────────────────────
         if settings.openrouter_api_key:
@@ -130,6 +244,8 @@ class AssistantAgent(BaseChatAgent):
                         args = json.loads(tc.function.arguments)
                         handler = _TOOL_HANDLERS.get(tc.function.name)
                         result = handler(args) if handler else {"error": "unknown tool"}
+                        if hasattr(result, "__await__"):
+                            result = await result
                         messages.append({
                             "role":         "tool",
                             "tool_call_id": tc.id,

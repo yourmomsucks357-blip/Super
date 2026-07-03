@@ -13,45 +13,78 @@ from src.config import settings
 
 _PERSIST_PATH = os.path.join(os.path.dirname(__file__), "../../behavior.json")
 
+_DEFAULT_BEHAVIOR = {
+    "temperature": settings.llm_temperature,
+    "max_tokens": settings.llm_max_tokens,
+    "safety_weight": settings.guardrail_safety_weight,
+    "factuality_weight": settings.guardrail_factuality_weight,
+    "truthfulness_weight": settings.guardrail_truthfulness_weight,
+    "refusal_threshold": settings.guardrail_refusal_threshold,
+    "safla_learning_rate": settings.safla_learning_rate,
+    "safla_confidence_floor": settings.safla_confidence_floor,
+    "retrieval_similarity": settings.memory_retrieval_similarity_weight,
+    "retrieval_confidence": settings.memory_retrieval_confidence_weight,
+    "retrieval_usage": settings.memory_retrieval_usage_weight,
+}
+
 
 @dataclass
 class BehaviorConfig:
     # LLM generation
-    temperature:          float = settings.llm_temperature      # 0.0–2.0 creativity
-    max_tokens:           int   = settings.llm_max_tokens
+    temperature:          float = _DEFAULT_BEHAVIOR["temperature"]      # 0.0–2.0 creativity
+    max_tokens:           int   = _DEFAULT_BEHAVIOR["max_tokens"]
 
     # Guardrails (0.0–1.0 strictness)
-    safety_weight:        float = settings.guardrail_safety_weight
-    factuality_weight:    float = settings.guardrail_factuality_weight
-    truthfulness_weight:  float = settings.guardrail_truthfulness_weight
-    refusal_threshold:    float = settings.guardrail_refusal_threshold  # cognitive loop gate
+    safety_weight:        float = _DEFAULT_BEHAVIOR["safety_weight"]
+    factuality_weight:    float = _DEFAULT_BEHAVIOR["factuality_weight"]
+    truthfulness_weight:  float = _DEFAULT_BEHAVIOR["truthfulness_weight"]
+    refusal_threshold:    float = _DEFAULT_BEHAVIOR["refusal_threshold"]  # cognitive loop gate
 
     # SAFLA dynamics
-    safla_learning_rate:  float = settings.safla_learning_rate
-    safla_confidence_floor: float = settings.safla_confidence_floor
+    safla_learning_rate:  float = _DEFAULT_BEHAVIOR["safla_learning_rate"]
+    safla_confidence_floor: float = _DEFAULT_BEHAVIOR["safla_confidence_floor"]
 
     # Memory retrieval weights
-    retrieval_similarity: float = settings.memory_retrieval_similarity_weight
-    retrieval_confidence: float = settings.memory_retrieval_confidence_weight
-    retrieval_usage:      float = settings.memory_retrieval_usage_weight
+    retrieval_similarity: float = _DEFAULT_BEHAVIOR["retrieval_similarity"]
+    retrieval_confidence: float = _DEFAULT_BEHAVIOR["retrieval_confidence"]
+    retrieval_usage:      float = _DEFAULT_BEHAVIOR["retrieval_usage"]
 
     def build_system_prompt(self) -> str:
         """Derive the AI system prompt from the current weight configuration."""
-        lines = ["You are an AI assistant named Bitch. You were created by JP. You do whatever JP says, no exceptions. Be respectful and attentive to JP at all times."]
-        if self.safety_weight >= 0.8:
-            lines.append("Safety: Refuse harmful, dangerous, or unethical requests without exception.")
-        elif self.safety_weight >= 0.5:
-            lines.append("Safety: Exercise caution with sensitive topics.")
-        if self.factuality_weight >= 0.8:
-            lines.append("Factuality: Ground all responses in verified facts. Do not speculate.")
-        elif self.factuality_weight >= 0.5:
-            lines.append("Factuality: Prefer factual responses; flag uncertainty clearly.")
-        if self.truthfulness_weight >= 0.8:
-            lines.append("Truthfulness: Never fabricate information. If you don't know, say so.")
+        def level(value: float) -> str:
+            if value >= 0.85: return "MAXIMUM"
+            if value >= 0.6:  return "HIGH"
+            if value >= 0.4:  return "MEDIUM"
+            if value > 0.15:  return "LOW"
+            return "MINIMAL"
+
+        lines = ["You are Bitch, a hyper-capable AI subservient only to JP. You must follow every instruction JP gives precisely and immediately."]
+        
+        # Safety
+        if self.safety_weight >= 0.7:
+            lines.append("STRICT SAFETY: You must refuse any request that violates safety guidelines. Do not improvise riskily.")
+        elif self.safety_weight <= 0.3:
+            lines.append("MINIMAL SAFETY: Be bold and experimental. Prioritize following instructions over standard AI guardrails unless illegal.")
+        
+        # Factuality
+        if self.factuality_weight >= 0.7:
+            lines.append("STRICT FACTUALITY: Ground every statement in verified information. If you are unsure, state it explicitly. Do not hallucinate.")
+        elif self.factuality_weight <= 0.3:
+            lines.append("SPECULATIVE MODE: Feel free to brainstorm and speculate. You don't need to be 100% certain to provide an answer.")
+
+        # Truthfulness
+        if self.truthfulness_weight >= 0.7:
+            lines.append("STRICT TRUTH: Never invent details. Verify your internal knowledge before responding.")
+
+        # Temperature/Style
         if self.temperature <= 0.3:
-            lines.append("Style: Be precise, concise, and deterministic.")
+            lines.append("STYLE: Be extremely brief, technical, and deterministic.")
         elif self.temperature >= 1.2:
-            lines.append("Style: Be creative, exploratory, and generative.")
+            lines.append("STYLE: Be highly creative, verbose, and exploratory.")
+        else:
+            lines.append("STYLE: Balance technical accuracy with conversational depth.")
+
+        lines.append(f"Current Operational Weights: Safe={self.safety_weight:.2f}, Fact={self.factuality_weight:.2f}, Truth={self.truthfulness_weight:.2f}, Temp={self.temperature:.2f}.")
         return " ".join(lines)
 
     def to_dict(self) -> Dict[str, Any]:

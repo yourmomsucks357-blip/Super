@@ -164,6 +164,7 @@ def _fmt(item: MemoryItem) -> Dict[str, Any]:
         d.update({
             "description":  item.description,
             "outcome":      item.outcome.value,
+            "kind":         item.kind,
             "is_guardrail": item.is_guardrail,
             "task_pattern": item.task_pattern,
         })

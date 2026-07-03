@@ -3,16 +3,10 @@ from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 from src.workflow.dsl import WorkflowDSL, WorkflowConfig
+from src.workflow.registry import WorkflowRegistry
 from src.workflow.engine import workflow_engine
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
-
-# In-memory workflow registry
-_workflows: Dict[str, WorkflowConfig] = {}
-
-# Seed the default SAFLA workflow on startup
-_default = WorkflowDSL.default_workflow()
-_workflows[_default.workflow_id] = _default
 
 
 class WorkflowCreateRequest(BaseModel):
@@ -37,7 +31,7 @@ async def list_workflows():
     return [
         {"workflow_id": w.workflow_id, "name": w.name, "description": w.description,
          "node_count": len(w.nodes), "edge_count": len(w.edges)}
-        for w in _workflows.values()
+        for w in WorkflowRegistry.list_all()
     ]
 
 
@@ -52,13 +46,13 @@ async def create_workflow(req: WorkflowCreateRequest):
         config = WorkflowDSL.default_workflow()
         config.name = req.name
         config.description = req.description
-    _workflows[config.workflow_id] = config
+    WorkflowRegistry.register(config)
     return {"workflow_id": config.workflow_id, "name": config.name}
 
 
 @router.get("/{workflow_id}")
 async def get_workflow(workflow_id: str):
-    config = _workflows.get(workflow_id)
+    config = WorkflowRegistry.get(workflow_id)
     if not config:
         raise HTTPException(status_code=404, detail="Workflow not found")
     return {
@@ -81,9 +75,9 @@ async def get_workflow(workflow_id: str):
 
 @router.delete("/{workflow_id}")
 async def delete_workflow(workflow_id: str):
-    if workflow_id not in _workflows:
+    if not WorkflowRegistry.get(workflow_id):
         raise HTTPException(status_code=404, detail="Workflow not found")
-    del _workflows[workflow_id]
+    WorkflowRegistry.delete(workflow_id)
     return {"deleted": workflow_id}
 
 
@@ -91,7 +85,7 @@ async def delete_workflow(workflow_id: str):
 
 @router.post("/{workflow_id}/run")
 async def run_workflow(workflow_id: str, req: WorkflowRunRequest):
-    config = _workflows.get(workflow_id)
+    config = WorkflowRegistry.get(workflow_id)
     if not config:
         raise HTTPException(status_code=404, detail="Workflow not found")
     run = await workflow_engine.run(config, inputs=req.inputs)
@@ -133,7 +127,7 @@ async def resume_run(run_id: str, req: ResumeRequest):
     return {"run_id": run_id, "resumed": True}
 
 
-@router.get("")
+@router.get("/runs")
 async def list_runs():
     return [
         {"run_id": r.run_id, "workflow_id": r.workflow_id, "status": r.status,

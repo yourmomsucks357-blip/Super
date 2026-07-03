@@ -40,7 +40,7 @@ restart_api() {
 restart_tunnel() {
     while true; do
         echo "[Tunnel] Starting..."
-        "$CF_BIN" tunnel --url "http://localhost:${PORT:-8000}" \
+        "$CF_BIN" tunnel --url "http://localhost:${PORT:-8000}" --metrics localhost:0 --management-diagnostics=false \
             >> "$LOGDIR/tunnel.log" 2>&1 &
         CF_PID=$!
         wait $CF_PID

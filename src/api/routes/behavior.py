@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Any, Dict, Optional
-from src.config.runtime import behavior
+from src.config.runtime import behavior, _DEFAULT_BEHAVIOR
 
 router = APIRouter(prefix="/config/behavior", tags=["behavior"])
 
@@ -40,12 +40,5 @@ async def update_behavior(req: BehaviorUpdateRequest):
 
 @router.post("/reset")
 async def reset_behavior():
-    behavior.apply({
-        "temperature": 1.5, "max_tokens": 1024,
-        "safety_weight": 0.0, "factuality_weight": 0.0,
-        "truthfulness_weight": 0.0, "refusal_threshold": 0.0,
-        "safla_learning_rate": 0.1, "safla_confidence_floor": 0.05,
-        "retrieval_similarity": 0.5, "retrieval_confidence": 0.3,
-        "retrieval_usage": 0.2,
-    })
+    behavior.apply(_DEFAULT_BEHAVIOR)
     return behavior.to_dict()
