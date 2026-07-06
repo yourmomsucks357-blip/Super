@@ -206,8 +206,7 @@ class PaperResearchAgent(BaseAgent):
                 tags.append(str(paper["year"]))
 
             abstract = paper.get("abstract") or ""
-            if paper.get("url"):
-                url = paper.get("url") or ""
+            url = paper.get("url") or ""
             content = abstract
             if url:
                 content += "\n\nURL: " + url
