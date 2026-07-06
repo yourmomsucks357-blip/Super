@@ -209,14 +209,14 @@ class AssistantAgent(BaseChatAgent):
         system_prompt = behavior.build_system_prompt()
         print(f"DEBUG: Using System Prompt: {system_prompt}")
 
-        # ── OpenRouter ────────────────────────────────────────────────
+        # ── OpenRouter (direct HTTP calls) ────────────────────────
         if settings.openrouter_api_key:
             try:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(
-                    api_key=settings.openrouter_api_key,
-                    base_url=settings.openrouter_base_url,
-                )
+                import httpx
+                headers = {
+                    "Authorization": f"Bearer {settings.openrouter_api_key}",
+                    "Content-Type": "application/json",
+                }
                 messages = [{"role": "system", "content": system_prompt}] + [
                     {"role": m.role, "content": m.content}
                     for m in session.history
@@ -225,31 +225,39 @@ class AssistantAgent(BaseChatAgent):
 
                 # ── Agentic tool-call loop ─────────────────────────────
                 while True:
-                    resp = await client.chat.completions.create(
-                        model=settings.llm_model,
-                        messages=messages,
-                        tools=_TOOLS,
-                        tool_choice="auto",
-                        temperature=behavior.temperature,
-                        max_tokens=behavior.max_tokens,
-                    )
-                    msg = resp.choices[0].message
+                    payload = {
+                        "model": settings.llm_model,
+                        "messages": messages,
+                        "tools": _TOOLS,
+                        "tool_choice": "auto",
+                        "temperature": behavior.temperature,
+                        "max_tokens": behavior.max_tokens,
+                    }
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.post(
+                            f"{settings.openrouter_base_url}/chat/completions",
+                            headers=headers,
+                            json=payload,
+                        )
+                        resp.raise_for_status()
+                        data = resp.json()
+                        msg = data["choices"][0]["message"]
 
-                    if not msg.tool_calls:
-                        return msg.content
+                    if not msg.get("tool_calls"):
+                        return msg.get("content", "")
 
                     # Execute each tool call and feed results back
                     messages.append(msg)
-                    for tc in msg.tool_calls:
-                        args = json.loads(tc.function.arguments)
-                        handler = _TOOL_HANDLERS.get(tc.function.name)
+                    for tc in msg.get("tool_calls", []):
+                        args = json.loads(tc["function"]["arguments"])
+                        handler = _TOOL_HANDLERS.get(tc["function"]["name"])
                         result = handler(args) if handler else {"error": "unknown tool"}
                         if hasattr(result, "__await__"):
                             result = await result
                         messages.append({
-                            "role":         "tool",
-                            "tool_call_id": tc.id,
-                            "content":      json.dumps(result),
+                            "role": "tool",
+                            "tool_call_id": tc["id"],
+                            "content": json.dumps(result),
                         })
 
             except Exception as exc:
