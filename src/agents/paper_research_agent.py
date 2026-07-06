@@ -205,11 +205,9 @@ class PaperResearchAgent(BaseAgent):
             if paper.get("year"):
                 tags.append(str(paper["year"]))
 
-            abstract = paper.get("abstract") or ""
-            url = paper.get("url") or ""
-            content = abstract
-            if url:
-                content += "\n\nURL: " + url
+            content = paper.get("abstract") or ""
+            if paper.get("url"):
+                content += "\n\nURL: " + paper.get("url")
 
             item = MemoryItem(
                 title=paper.get("title", "Untitled Paper"),
