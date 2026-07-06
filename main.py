@@ -3,6 +3,7 @@ import uvicorn
 from src.agents.examples import *       # noqa: registers echo/sleep/compute
 from src.agents.chat_agents import *    # noqa: registers assistant/router
 from src.agents.youtube_agent import *  # noqa: registers youtube_learner
+from src.agents.paper_research_agent import *  # noqa: registers paper_researcher
 from src.api.main import app
 from src.config import settings
 
