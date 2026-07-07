@@ -13,7 +13,7 @@ async def init_db():
         await db.execute("""
             CREATE TABLE IF NOT EXISTS memory_items (
                 item_id TEXT PRIMARY KEY,
-                tier TEXT NOT NULL,
+                tier INTEGER NOT NULL DEFAULT 5,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 tags TEXT NOT NULL,
@@ -25,6 +25,7 @@ async def init_db():
             )
         """)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_tags ON memory_items(tags)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_tier ON memory_items(tier)")
         await db.commit()
 
 class DatabaseMemoryStore:
@@ -38,7 +39,7 @@ class DatabaseMemoryStore:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 item.item_id,
-                item.tier.value if hasattr(item.tier, 'value') else str(item.tier),
+                item.tier.value if hasattr(item.tier, 'value') else (getattr(item, 'tier', 5) if hasattr(item, 'tier') else 5),
                 item.title,
                 item.content,
                 ",".join(item.tags),
@@ -64,7 +65,7 @@ class DatabaseMemoryStore:
             async with db.execute("""
                 SELECT * FROM memory_items
                 WHERE tags LIKE ? OR content LIKE ?
-                ORDER BY usage_count DESC
+                ORDER BY tier DESC, usage_count DESC
                 LIMIT ?
             """, (f"%{query}%", f"%{query}%", limit)) as cursor:
                 rows = await cursor.fetchall()
