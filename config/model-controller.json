@@ -1,0 +1,63 @@
+{
+  "modelName": "hermes-4-70b",
+  "baseUrl": "http://localhost:7860",
+  "temperature": 0.2,
+  "top_p": 0.95,
+  "max_tokens": 4096,
+  "systemPromptPath": "system/offering-rules.md",
+  "projectRulesPath": "system/project-rules.md",
+  "allowedTools": [
+    "file_read",
+    "file_write",
+    "terminal"
+  ],
+  "responseMode": "direct",
+  "tokenSaving": true,
+  "verbosity": "minimal",
+  "allowExplanations": false,
+  "allowSummaries": false,
+  "allowNextSteps": false,
+  "strictFileListOnly": true,
+  "strictProjectScope": true,
+  "lowRestrictionCodingMode": true,
+  "allowedTerminalCommands": {
+    "npm": [
+      {
+        "args": [
+          "install"
+        ],
+        "allowExtraArgs": true
+      },
+      {
+        "args": [
+          "run",
+          "build"
+        ],
+        "allowExtraArgs": false
+      }
+    ],
+    "git": [
+      {
+        "args": [
+          "add"
+        ],
+        "allowExtraArgs": true
+      },
+      {
+        "args": [
+          "commit"
+        ],
+        "allowExtraArgs": true
+      },
+      {
+        "args": [
+          "push"
+        ],
+        "allowExtraArgs": false
+      }
+    ]
+  },
+  "allowFrontendFiles": false,
+  "repoRoot": "./project",
+  "projectMemoryRoot": "./project_memory"
+}
