@@ -3,8 +3,9 @@ YouTube Learning Agent — fetches a video transcript and stores it in
 AssociativeMemory so the knowledge is available to the cognitive loop
 and retrievable via the /memory API.
 """
+import asyncio
 import re
-from typing import Any, List
+from typing import Any, List, Optional
 
 from src.agents.base import AgentContext, BaseAgent
 from src.agents.registry import AgentRegistry
@@ -40,6 +41,28 @@ class YouTubeLearningAgent(BaseAgent):
         tags     (list[str]) – Extra tags to attach to the memory item.
     """
 
+    async def _get_transcript(self, video_id: str, language: str = "en") -> Optional[str]:
+        """Get video transcript safely without blocking the application thread loop."""
+        try:
+            from youtube_transcript_api import YouTubeTranscriptApi
+            
+            proxies = None
+            if settings.youtube_proxy_url:
+                proxies = {"http": settings.youtube_proxy_url, "https": settings.youtube_proxy_url}
+            
+            def fetch():
+                return YouTubeTranscriptApi.get_transcript(
+                    video_id,
+                    proxies=proxies,
+                    languages=[language]
+                )
+            
+            loop = asyncio.get_running_loop()
+            transcript = await loop.run_in_executor(None, fetch)
+            return " ".join([t["text"] for t in transcript])
+        except Exception:
+            return None
+
     async def execute(
         self,
         context: AgentContext,
@@ -51,7 +74,7 @@ class YouTubeLearningAgent(BaseAgent):
         **kwargs,
     ) -> Any:
         if not url:
-            return {"error": "'url' is required. Example: {\"url\": \"https://www.youtube.com/watch?v=VIDEO_ID\"}"}
+            return {"error": "'url' is required. Example: {"url": "https://www.youtube.com/watch?v=VIDEO_ID"}"}
 
         try:
             from youtube_transcript_api import YouTubeTranscriptApi
@@ -64,12 +87,10 @@ class YouTubeLearningAgent(BaseAgent):
         video_id = _extract_video_id(url)
         canonical_url = f"https://www.youtube.com/watch?v={video_id}"
 
-        proxy_url = settings.youtube_proxy_url
-        proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
-        api = YouTubeTranscriptApi(proxies=proxies)
-
         try:
-            transcript = api.fetch(video_id, languages=[language])
+            full_text = await self._get_transcript(video_id, language)
+            if full_text is None:
+                raise Exception("Failed to fetch transcript")
         except Exception as e:
             err = str(e).lower()
             if "ipblocked" in err or "blocked" in err or "requestblocked" in err or "too many requests" in err:
@@ -80,7 +101,6 @@ class YouTubeLearningAgent(BaseAgent):
                 )
                 return {"error": msg}
             raise
-        full_text = " ".join(entry.text for entry in transcript)
 
         # Subject is the primary retrieval key — stored as title + tag so the
         # memory retriever finds this knowledge when that topic is queried.
@@ -98,7 +118,7 @@ class YouTubeLearningAgent(BaseAgent):
                 "video_id":      video_id,
                 "url":           canonical_url,
                 "language":      language,
-                "segment_count": len(transcript),
+                "segment_count": len(full_text.split(" ")),
                 "subject":       effective_subject,
             },
         )
@@ -111,6 +131,6 @@ class YouTubeLearningAgent(BaseAgent):
             "subject":           effective_subject,
             "title":             item.title,
             "characters_stored": len(full_text),
-            "segments":          len(transcript),
+            "segments":          len(full_text.split(" ")),
             "tags":              item.tags,
         }
