@@ -19,6 +19,7 @@ from .routes.memory import router as memory_router
 from .routes.behavior import router as behavior_router
 from .routes.uploads import router as uploads_router
 from .routes.papers import router as papers_router
+from .routes.coding import router as coding_router
 
 logging.basicConfig(level=logging.DEBUG if settings.debug else logging.INFO)
 
@@ -56,6 +57,7 @@ app.include_router(memory_router)
 app.include_router(behavior_router)
 app.include_router(uploads_router)
 app.include_router(papers_router)
+app.include_router(coding_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
