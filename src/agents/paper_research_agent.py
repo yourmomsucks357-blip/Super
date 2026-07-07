@@ -197,7 +197,7 @@ class PaperResearchAgent(BaseAgent):
         return unique
 
     def _store_paper(self, paper: Dict) -> None:
-        """Store paper in associative memory."""
+        """Store paper in associative memory with tier 10 (highest authority)."""
         try:
             tags = ["research", "academic", paper.get("source", "paper")]
             if paper.get("authors"):
@@ -213,6 +213,7 @@ class PaperResearchAgent(BaseAgent):
                 title=paper.get("title", "Untitled Paper"),
                 content=content,
                 tags=tags,
+                tier=10,  # HIGHEST AUTHORITY: Academic papers
                 metadata={
                     "source": paper.get("source"),
                     "paper_id": paper.get("id"),
