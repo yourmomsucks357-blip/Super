@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     openrouter_api_key: Optional[str] = None
     llm_model: str = "openai/gpt-4o"
     llm_temperature: float = 0.7
-    llm_max_tokens: int = 1024
+    llm_max_tokens: int = 4096  # EXPANDED: Prevents long code refactors from cutting off mid-sentence
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     semantic_scholar_api_key: Optional[str] = None
 
