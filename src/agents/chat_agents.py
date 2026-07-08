@@ -185,7 +185,7 @@ _TOOL_HANDLERS = {
 }
 
 
-@AgentRegistry.register("assistant")
+@AgentRegistry.register("assistant_legacy")
 class AssistantAgent(BaseChatAgent):
     """
     General-purpose assistant with LLM-driven tool calling.
