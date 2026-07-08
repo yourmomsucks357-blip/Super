@@ -7,7 +7,7 @@ from .base import BaseAgent, AgentContext
 from .registry import AgentRegistry
 
 
-@AgentRegistry.register("hermes_coder")
+@AgentRegistry.register("assistant")
 class HermesCodingAgent(BaseAgent):
     def __init__(self, agent_id: str = None, name: str = None):
         super().__init__(agent_id, name)
