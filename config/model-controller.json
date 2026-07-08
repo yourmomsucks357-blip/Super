@@ -1,6 +1,6 @@
 {
-  "modelName": "hermes-4-70b",
-  "baseUrl": "http://localhost:7860",
+  "modelName": "openai/gpt-4o",
+  "baseUrl": "https://openrouter.ai/api/v1",
   "temperature": 0.2,
   "top_p": 0.95,
   "max_tokens": 4096,
