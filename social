@@ -1,0 +1,26 @@
+{
+  "platforms": ["instagram", "twitter", "facebook", "tiktok", "linkedin"],
+  "attack_vectors": [
+    "credential_stuffing",
+    "brute_force",
+    "phishing",
+    "api_abuse",
+    "session_hijacking",
+    "2fa_bypass"
+  ],
+  "data_points": [
+    "username",
+    "email",
+    "phone",
+    "password_hashes",
+    "recovery_emails",
+    "connected_accounts"
+  ],
+  "workflow": [
+    "recon",
+    "enumerate",
+    "attack",
+    "validate",
+    "persist"
+  ]
+}
