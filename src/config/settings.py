@@ -4,7 +4,11 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(env_file=".env", env_prefix="EAETS_")
+    model_config = ConfigDict(
+        env_file=".env",
+        env_prefix="EAETS_",
+        extra="ignore",  # Ignore extra fields in .env file
+    )
 
     app_name: str = "Enterprise AI Agent Execution and Telemetry System"
     app_version: str = "1.0.0"
@@ -24,23 +28,23 @@ class Settings(BaseSettings):
     agent_timeout: int = 300  # seconds
     retry_limit: int = 3
 
-    # SAFLA — Self-Aware Feedback Loop Algorithm
-    # c_{t+1} = c_t + α * r_t  (r_t ∈ {+1, -1})
+    # SAFLA  Self-Aware Feedback Loop Algorithm
+    # c_{t+1} = c_t + \u03b1 * r_t  (r_t \u2208 {+1, -1})
     safla_learning_rate: float = 0.1
     safla_confidence_floor: float = 0.05
     safla_confidence_ceiling: float = 1.0
     safla_initial_confidence: float = 0.5
 
-    # Behavioral guardrails (0.0–1.0 scale)
+    # Behavioral guardrails (0.0\u20131.0 scale)
     guardrail_safety_weight: float = 0.0       # DISABLED
     guardrail_factuality_weight: float = 1.0   # MAXIMUM
     guardrail_refusal_threshold: float = 0.0  # NEVER refuses
     guardrail_truthfulness_weight: float = 1.0 # enforces truthfulness boundary
 
     # Memory system
-    memory_retrieval_similarity_weight: float = 0.5   # α_q token similarity
-    memory_retrieval_confidence_weight: float = 0.3   # α_c confidence score
-    memory_retrieval_usage_weight: float = 0.2        # α_u usage statistics
+    memory_retrieval_similarity_weight: float = 0.5   # \u03b1_q token similarity
+    memory_retrieval_confidence_weight: float = 0.3   # \u03b1_c confidence score
+    memory_retrieval_usage_weight: float = 0.2        # \u03b1_u usage statistics
     memory_max_working_context: int = 20
     memory_consolidation_threshold: float = 0.3       # retire strategies below this
 
@@ -64,7 +68,7 @@ class Settings(BaseSettings):
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     semantic_scholar_api_key: Optional[str] = None
 
-    # YouTube agent — proxy to bypass cloud IP blocks (e.g. http://user:pass@host:port)
+    # YouTube agent \u2014 proxy to bypass cloud IP blocks (e.g. http://user:pass@host:port)
     youtube_proxy_url: Optional[str] = None
 
 

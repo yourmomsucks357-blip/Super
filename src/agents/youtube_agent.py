@@ -35,10 +35,10 @@ class YouTubeLearningAgent(BaseAgent):
     and visible in the Memory view of the UI.
 
     kwargs:
-        url      (str)       – YouTube URL or 11-char video ID (required).
-        title    (str)       – Optional custom title; defaults to video ID.
-        language (str)       – Transcript language code, default "en".
-        tags     (list[str]) – Extra tags to attach to the memory item.
+        url      (str)       - YouTube URL or 11-char video ID (required).
+        title    (str)       - Optional custom title; defaults to video ID.
+        language (str)       - Transcript language code, default "en".
+        tags     (list[str]) - Extra tags to attach to the memory item.
     """
 
     async def _get_transcript(self, video_id: str, language: str = "en") -> Optional[str]:
@@ -74,7 +74,7 @@ class YouTubeLearningAgent(BaseAgent):
         **kwargs,
     ) -> Any:
         if not url:
-            return {"error": "'url' is required. Example: {"url": "https://www.youtube.com/watch?v=VIDEO_ID"}"}
+            return {"error": "'url' is required. Example: {'url': 'https://www.youtube.com/watch?v=VIDEO_ID'}"}
 
         try:
             from youtube_transcript_api import YouTubeTranscriptApi

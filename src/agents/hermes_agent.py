@@ -39,11 +39,7 @@ class HermesCodingAgent(BaseAgent):
             project_rules = f.read()
 
         memory_content = self.load_project_memory(memory_files)
-        full_prompt = f"{project_rules}
-
-{memory_content}
-
-{prompt}"
+        full_prompt = f"{project_rules}\n\n{memory_content}\n\n{prompt}"
 
         async with httpx.AsyncClient(timeout=120.0) as client:
             response = await client.post(
@@ -90,9 +86,7 @@ class HermesCodingAgent(BaseAgent):
                 if os.path.exists(file_path):
                     if os.path.getsize(file_path) <= 1024 * 1024:
                         with open(file_path, "r", encoding="utf-8") as f:
-                            memory_content += f.read() + "
-
-"
+                            memory_content += f.read() + "\n\n"
             except ValueError:
                 continue
         return memory_content
@@ -132,7 +126,7 @@ class HermesCodingAgent(BaseAgent):
         except ValueError as e:
             return {"error": str(e)}
 
-        normalized_path = file_path.replace("\", "/").lstrip("./")
+        normalized_path = file_path.replace("\\", "/").lstrip("./")
         frontend_paths = ["frontend/", "client/", "web/", "app/", "pages/", "components/", "src/frontend/"]
         if not self.cfg["allowFrontendFiles"] and any(normalized_path.startswith(p) for p in frontend_paths):
             return {"error": "Frontend file write not allowed"}

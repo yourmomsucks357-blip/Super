@@ -13,7 +13,7 @@ class MemoryModel(Base):
     created_at = Column(Integer)  # timestamp
 
 # Database engine and session
-engine = create_engine(Settings.DATABASE_URL)
+engine = create_engine(Settings.db_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db():

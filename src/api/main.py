@@ -10,6 +10,13 @@ from fastapi.staticfiles import StaticFiles
 from src.config import settings
 from src.telemetry import collector
 from src.jobs.queue import job_queue
+
+# Import agents to register them
+from src.agents.examples import *  # noqa: F401, F403
+from src.agents.chat_agents import *  # noqa: F401, F403
+from src.agents.youtube_agent import *  # noqa: F401, F403
+from src.agents.paper_research_agent import *  # noqa: F401, F403
+
 from .routes.agents import router as agents_router
 from .routes.telemetry import router as telemetry_router
 from .routes.chat import router as chat_router

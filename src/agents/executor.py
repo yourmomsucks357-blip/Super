@@ -88,7 +88,7 @@ class AgentExecutor:
             if last_result.status == AgentStatus.CANCELLED:
                 break
 
-        return 
+        return last_result
     
 
     async def cancel(self, run_id: str) -> bool:
