@@ -233,9 +233,11 @@ class AssistantAgent(BaseChatAgent):
                         "temperature": behavior.temperature,
                         "max_tokens": behavior.max_tokens,
                     }
+                    # Construct the correct OpenRouter endpoint URL, ensuring no double slashes
+                    openrouter_url = settings.openrouter_base_url.rstrip('/') + "/chat/completions"
                     async with httpx.AsyncClient() as client:
                         resp = await client.post(
-                            f"{settings.openrouter_base_url}/chat/completions",
+                            openrouter_url,
                             headers=headers,
                             json=payload,
                         )
