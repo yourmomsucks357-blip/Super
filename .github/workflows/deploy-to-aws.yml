@@ -1,0 +1,51 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches: [ main ]  # Trigger on push to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install boto3
+
+      - name: Deploy to AWS
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: "us-east-1"
+          S3_BUCKET: "your-s3-bucket-name"  # Replace with your bucket
+          AWS_SERVICE: "S3"  # or EC2, Lambda, etc.
+        run: |
+          python -c "
+          import os
+          import boto3
+          from pathlib import Path
+
+          s3 = boto3.client(
+              's3',
+              region_name=os.getenv('AWS_REGION'),
+              aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+              aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
+          )
+
+          bucket = os.getenv('S3_BUCKET')
+          for root, _, files in os.walk('.'):
+              for file in files:
+                  if not file.endswith('.git') and not file.startswith('.'):
+                      local_path = Path(root) / file
+                      s3_key = str(local_path.relative_to('.'))
+                      s3.upload_file(str(local_path), bucket, s3_key)
+                      print(f'Uploaded: {s3_key}')
+          print('Deployment complete!')
+          "
