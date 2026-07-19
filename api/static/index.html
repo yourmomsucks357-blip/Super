@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Super — AI Agent Platform</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;--muted:#8b949e;
+  --text:#e6edf3;--text2:#c9d1d9;--blue:#58a6ff;--blue-btn:#1f6feb;
+  --green:#3fb950;--red:#f85149;--yellow:#e3b341;--purple:#bc8cff;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:44px;flex-shrink:0}
+.logo{font-size:16px;font-weight:700;color:var(--blue);letter-spacing:-.3px}
+.badge{background:#21262d;border:1px solid var(--border);border-radius:10px;padding:1px 9px;font-size:11px;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 5px var(--green);margin-left:4px}
+nav{margin-left:auto;display:flex;gap:2px}
+.nav-btn{padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted);border:none;background:none;transition:all .15s}
+.nav-btn.active,.nav-btn:hover{background:#21262d;color:var(--text)}
+main{flex:1;overflow:hidden;display:flex}
+.view{display:none;flex:1;overflow:hidden}
+.view.active{display:flex}
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.btn-primary{background:var(--blue-btn);color:#fff}.btn-primary:hover{background:#388bfd}
+.btn-secondary{background:#21262d;color:var(--text2);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.btn-danger{background:#3d1a1a;color:var(--red);border:1px solid #5a2020}.btn-danger:hover{background:#5a2020}
+.btn-sm{padding:4px 10px;font-size:12px}.btn-xs{padding:2px 8px;font-size:11px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px}
+.code{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-family:monospace;font-size:12px;color:#79c0ff;white-space:pre-wrap;overflow:auto}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.pill-green{background:#1a4731;color:var(--green)}.pill-red{background:#3d1a1a;color:var(--red)}
+.pill-blue{background:#1a2d4f;color:var(--blue)}.pill-yellow{background:#2d2a1a;color:var(--yellow)}
+.pill-purple{background:#2a1a4f;color:var(--purple)}.pill-grey{background:#21262d;color:var(--muted)}
+input,select,textarea{background:#0d1117;border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-btn)}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}
+textarea{resize:vertical;font-family:monospace}
+.section-header{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.section-title{font-size:14px;font-weight:600;color:var(--text2)}
+.ml-auto{margin-left:auto}
+.flex{display:flex}.flex-col{flex-direction:column}.gap-8{gap:8px}.gap-12{gap:12px}
+.items-center{align-items:center}.scroll{overflow-y:auto}
+.divider{height:1px;background:var(--border);margin:12px 0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--muted);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+td{padding:6px 10px;border-bottom:1px solid #21262d;vertical-align:top}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:32px}
+
+/* ── Builder ── */
+#builder-view{flex-direction:row}
+.builder-sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-head{padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.node-palette{padding:10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto}
+.palette-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);cursor:grab;font-size:13px;background:#0d1117;user-select:none}
+.palette-item:hover{border-color:var(--blue-btn);background:#1a2240}
+.node-icon{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.builder-canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+.canvas-toolbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.wf-node{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:8px;min-width:140px;padding:10px 12px;cursor:move;user-select:none;transition:box-shadow .15s}
+.wf-node:hover,.wf-node.selected{border-color:var(--blue-btn);box-shadow:0 0 0 2px #1f6feb44}
+.wf-node-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.wf-node-title{font-size:12px;font-weight:600;color:var(--text2)}
+.wf-node-type{font-size:10px;color:var(--muted)}
+.wf-port{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);background:var(--bg);position:absolute;cursor:crosshair;transition:all .1s}
+.wf-port:hover{background:var(--blue-btn);border-color:var(--blue-btn)}
+.wf-port.in{left:-5px;top:50%;transform:translateY(-50%)}
+.wf-port.out{right:-5px;top:50%;transform:translateY(-50%)}
+.edge-line{fill:none;stroke:var(--border);stroke-width:2;pointer-events:none}
+.edge-line.success{stroke:var(--green)}.edge-line.failure{stroke:var(--red)}
+.builder-inspector{width:260px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.inspector-body{padding:12px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px}
+.inspector-field{display:flex;flex-direction:column;gap:4px}
+.workflow-bar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:10;display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+
+/* ── Memory ── */
+#memory-view{flex-direction:row}
+.memory-nav{width:180px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:12px;gap:4px;flex-shrink:0}
+.mem-nav-btn{padding:8px 10px;border-radius:6px;border:none;background:none;color:var(--muted);font-size:13px;cursor:pointer;text-align:left}
+.mem-nav-btn:hover,.mem-nav-btn.active{background:#21262d;color:var(--text)}
+.memory-main{flex:1;padding:20px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+.safla-bar{display:flex;align-items:center;gap:8px}
+.safla-track{flex:1;height:6px;background:#21262d;border-radius:3px;overflow:hidden}
+.safla-fill{height:100%;border-radius:3px;transition:width .3s}
+.conf-high{background:var(--green)}.conf-mid{background:var(--yellow)}.conf-low{background:var(--red)}
+.mem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.mem-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px}
+.mem-card-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.mem-card-content{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.mem-tags{display:flex;flex-wrap:wrap;gap:4px}
+.mem-tag{background:#21262d;padding:2px 7px;border-radius:10px;font-size:11px;color:var(--muted)}
+
+/* ── Chat ── */
+#chat-view{flex-direction:row}
+.chat-aside{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+.chat-aside h4{font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.4px}
+.agent-chip{padding:7px 10px;border-radius:6px;border:1px solid transparent;background:none;color:var(--text2);font-size:13px;cursor:pointer;text-align:left;width:100%}
+.agent-chip:hover{background:#21262d}
+.agent-chip.active{background:#1f6feb22;border-color:var(--blue-btn);color:var(--blue)}
+.chat-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:72%;padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.5;word-break:break-word}
+.msg.user{align-self:flex-end;background:var(--blue-btn);color:#fff;border-bottom-right-radius:3px}
+.msg.assistant{align-self:flex-start;background:#21262d;border:1px solid var(--border);border-bottom-left-radius:3px}
+.msg.system{align-self:center;background:none;color:var(--muted);font-size:12px;font-style:italic}
+.chat-footer{padding:12px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chat-footer input{flex:1}
+.chat-upload-btn{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:38px;border-radius:8px;border:1px solid var(--border);background:#21262d;color:var(--text2);cursor:pointer}
+.chat-upload-btn:hover{border-color:var(--blue-btn);color:var(--blue)}
+.chat-upload-preview{display:flex;align-items:center;gap:8px;min-width:100%;padding-top:6px}
+.chat-upload-preview img{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.chat-upload-preview span{font-size:12px;color:var(--muted)}
+.chat-upload-preview button{margin-left:auto}
+
+/* ── Jobs ── */
+#jobs-view{flex-direction:column;padding:20px;gap:16px;overflow-y:auto}
+
+/* ── Telemetry ── */
+#telemetry-view{flex-direction:column;padding:20px;gap:16px;overflow-y:auto}
+.metrics-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.metric-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.metric-val{font-size:28px;font-weight:700;color:var(--blue)}
+.metric-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+.event-row{background:#0d1117;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:12px;display:flex;gap:10px;align-items:baseline;margin-bottom:4px}
+.ev-type{color:var(--blue);font-weight:500;min-width:160px;flex-shrink:0}
+.ev-time{color:var(--muted);font-size:11px;min-width:70px;flex-shrink:0}
+.ev-data{color:var(--text2);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Behavior Architecture ── */
+.bv-layer{border:1px solid var(--border);border-radius:8px;padding:12px;background:#0d1117}
+.bv-layer-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.bv-layer-sub{font-size:11px;color:var(--muted)}
+.bv-arrow{display:flex;flex-direction:column;align-items:center;padding:4px 0;gap:2px}
+.bv-arrow-labels{display:flex;justify-content:space-between;width:100%;font-size:10px;color:var(--muted);padding:0 4px}
+.bv-arrow-line{font-size:18px;color:var(--border);line-height:1}
+.bw-card{background:#0d1117;border:1px solid var(--border);border-radius:8px;padding:12px}
+.bw-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:2px}
+.bw-desc{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.4}
+.bw-val{font-size:20px;font-weight:700;color:var(--blue)}
+</style>
+<body>
+<header>
+  <span class="logo">Super</span>
+  <span class="badge" id="version-badge">v1.0.0</span>
+  <span class="dot" id="status-dot"></span>
+  <nav>
+    <button class="nav-btn active" onclick="show('builder')">Builder</button>
+    <button class="nav-btn" onclick="show('memory')">Memory</button>
+    <button class="nav-btn" onclick="show('chat')">Chat</button>
+    <button class="nav-btn" onclick="show('jobs')">Jobs</button>
+    <button class="nav-btn" onclick="show('behavior')">Behavior</button>
+    <button class="nav-btn" onclick="show('telemetry')">Telemetry</button>
+  </nav>
+</header>
+<main>
+
+<!-- BUILDER -->
+<div class="view active" id="builder-view">
+  <div class="builder-sidebar">
+    <div class="sidebar-head">Node Palette</div>
+    <div class="node-palette">
+      <div class="palette-item" draggable="true" data-type="start"><div class="node-icon" style="background:#1a4731;color:var(--green)">▶</div>Start</div>
+      <div class="palette-item" draggable="true" data-type="memory_retrieval"><div class="node-icon" style="background:#2a1a4f;color:var(--purple)">⧖</div>Memory Retrieval</div>
+      <div class="palette-item" draggable="true" data-type="agent"><div class="node-icon" style="background:#1a2d4f;color:var(--blue)">⚙</div>Agent</div>
+      <div class="palette-item" draggable="true" data-type="outcome_judgment"><div class="node-icon" style="background:#2d2a1a;color:var(--yellow)">⚖</div>Outcome Judgment</div>
+      <div class="palette-item" draggable="true" data-type="condition"><div class="node-icon" style="background:#21262d;color:var(--text2)">◇</div>Condition</div>
+      <div class="palette-item" draggable="true" data-type="loop"><div class="node-icon" style="background:#21262d;color:var(--text2)">↺</div>Loop</div>
+      <div class="palette-item" draggable="true" data-type="human_approval"><div class="node-icon" style="background:#3d1a1a;color:var(--red)">✋</div>Human Approval</div>
+      <div class="palette-item" draggable="true" data-type="fail_branch"><div class="node-icon" style="background:#3d1a1a;color:var(--red)">⚠</div>Fail Branch</div>
+      <div class="palette-item" draggable="true" data-type="safla_consolidation"><div class="node-icon" style="background:#1a2d4f;color:var(--blue)">∑</div>SAFLA Consolidation</div>
+    </div>
+    <div class="divider"></div>
+    <div style="padding:10px">
+      <div class="sidebar-head" style="padding:0 0 8px">Workflows</div>
+      <div id="wf-list" style="display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:200px"></div>
+      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:8px" onclick="newWorkflow()">+ New</button>
+    </div>
+  </div>
+  <div class="builder-canvas-wrap" id="canvas-wrap">
+    <div class="canvas-toolbar">
+      <span id="wf-name-label" style="font-size:13px;color:var(--text2);font-weight:600">SAFLA Execution Workflow</span>
+      <button class="btn btn-secondary btn-sm" onclick="saveWorkflow()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="runCurrentWorkflow()">▶ Run</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleDslModal()">{ } DSL</button>
+    </div>
+    <svg id="edges-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+    <div id="wf-canvas"></div>
+    <div class="workflow-bar">
+      <button class="btn btn-secondary btn-sm" onclick="loadDefaultWorkflow()">Load Default SAFLA Flow</button>
+      <button class="btn btn-danger btn-sm" onclick="clearCanvas()">Clear</button>
+    </div>
+  </div>
+  <div class="builder-inspector">
+    <div class="sidebar-head" style="padding:12px 14px">Inspector</div>
+    <div class="inspector-body" id="inspector-body">
+      <p style="font-size:12px;color:var(--muted)">Select a node to edit its properties.</p>
+    </div>
+  </div>
+</div>
+
+<!-- DSL Modal -->
+<div id="dsl-modal" style="display:none;position:fixed;inset:0;background:#000a;z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;width:680px;max-height:80vh;display:flex;flex-direction:column;padding:20px;gap:12px">
+    <div class="flex items-center gap-8">
+      <span style="font-weight:600">Workflow DSL (YAML)</span>
+      <button class="btn btn-secondary btn-sm ml-auto" onclick="importDSL()">Import</button>
+      <button class="btn btn-secondary btn-sm" onclick="toggleDslModal()">✕</button>
+    </div>
+    <textarea id="dsl-textarea" style="flex:1;min-height:400px;font-size:12px"></textarea>
+  </div>
+</div>
+
+<!-- Run toast -->
+<div id="run-toast" style="display:none;position:fixed;bottom:20px;right:20px;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 18px;max-width:420px;font-size:13px;box-shadow:0 4px 20px #0008">
+  <div class="flex items-center gap-8">
+    <span id="run-toast-status" class="pill">running</span>
+    <span style="font-weight:600">Workflow Run</span>
+    <button style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--muted)" onclick="document.getElementById('run-toast').style.display='none'">✕</button>
+  </div>
+  <pre id="run-toast-body" style="margin-top:8px;font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:160px;overflow:auto"></pre>
+</div>
+
+<!-- MEMORY -->
+<div class="view" id="memory-view">
+  <div class="memory-nav">
+    <h4 style="padding:0 4px;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)">Tiers</h4>
+    <button class="mem-nav-btn active" onclick="showMemTier('overview')">Overview</button>
+    <button class="mem-nav-btn" onclick="showMemTier('associative')">Associative</button>
+    <button class="mem-nav-btn" onclick="showMemTier('temporal')">Temporal KG</button>
+    <button class="mem-nav-btn" onclick="showMemTier('experiential')">Experiential</button>
+    <button class="mem-nav-btn" onclick="showMemTier('guardrails')">Guardrails</button>
+    <button class="mem-nav-btn" onclick="showMemTier('working')">Working Context</button>
+    <div class="divider"></div>
+    <button class="btn btn-secondary btn-sm" onclick="loadMemory()">Refresh</button>
+    <button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="consolidateMem()">Consolidate</button>
+  </div>
+  <div class="memory-main" id="memory-main"></div>
+</div>
+
+<!-- CHAT -->
+<div class="view" id="chat-view">
+  <div class="chat-aside">
+    <h4>Main Brain</h4>
+    <button class="agent-chip active" data-agent="assistant" onclick="pickAgent('assistant')">Main Brain</button>
+    <div class="divider"></div>
+    <h4>Agents</h4>
+    <div id="agent-chips"></div>
+    <div class="divider"></div>
+    <h4>Session</h4>
+    <div id="session-label" style="font-size:11px;color:var(--muted);margin-top:4px;word-break:break-all"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="newSession()">New Session</button>
+  </div>
+  <div class="chat-body">
+    <div class="messages" id="messages"><div class="msg system">Select an agent and start chatting.</div></div>
+    <div class="chat-footer">
+      <label class="chat-upload-btn" for="chat-image-input" title="Upload image">+</label>
+      <input id="chat-image-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="uploadChatImage(event)"/>
+      <input id="msg-input" placeholder="Type a message… or /agent compute {&quot;numbers&quot;:[1,2,3]}" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="btn btn-primary" onclick="sendChat()">Send</button>
+      <div id="chat-upload-preview" class="chat-upload-preview" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- JOBS -->
+<div class="view" id="jobs-view">
+  <div class="card" style="flex-shrink:0">
+    <div class="section-header"><span class="section-title">Run Agent</span></div>
+    <div class="flex gap-12" style="flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:0 0 140px"><label>Agent Type</label><select id="run-agent-type" onchange="fillKwargs(this.value)"></select></div>
+      <div style="flex:0 0 120px"><label>Priority</label>
+        <select id="run-priority"><option value="vip">VIP</option><option value="high">High</option><option value="normal" selected>Normal</option><option value="low">Low</option></select>
+      </div>
+      <div style="flex:1;min-width:200px"><label>kwargs (JSON)</label><textarea id="run-kwargs" rows="2">{}</textarea></div>
+      <div class="flex gap-8">
+        <button class="btn btn-primary" onclick="runAgent()">Run Now</button>
+        <button class="btn btn-secondary" onclick="enqueueJob()">Enqueue</button>
+      </div>
+    </div>
+    <div id="run-result" class="code" style="display:none;margin-top:12px;max-height:160px"></div>
+  </div>
+  <div class="card">
+    <div class="section-header"><span class="section-title">Job Queue</span><button class="btn btn-secondary btn-sm ml-auto" onclick="loadJobs()">Refresh</button></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>ID</th><th>Agent</th><th>Priority</th><th>Weight</th><th>Status</th><th>Duration</th><th>Error</th></tr></thead><tbody id="jobs-tbody"></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="section-header"><span class="section-title">Pipeline</span></div>
+    <textarea id="pipeline-json" rows="5" style="font-size:12px">[
+  {"agent_type":"echo","kwargs":{"message":"step 1"}},
+  {"agent_type":"compute","kwargs":{"numbers":[1,2,3]},"pass_output":false}
+]</textarea>
+    <div style="margin-top:8px"><button class="btn btn-primary" onclick="runPipeline()">Run Pipeline</button></div>
+    <div id="pipeline-result" class="code" style="display:none;margin-top:10px;max-height:160px"></div>
+  </div>
+</div>
+
+<!-- BEHAVIOR -->
+<div class="view" id="behavior-view" style="flex-direction:row;overflow:hidden">
+
+  <!-- Architecture flow (left) -->
+  <div style="width:260px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:16px;gap:0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Architecture</span>
+      <button class="btn btn-danger btn-xs" onclick="resetBehavior()">Reset</button>
+      <span id="bw-save-indicator" style="font-size:12px;margin-left:8px"></span>
+    </div>
+
+    <!-- Layer 1: Cognitive Loop -->
+    <div class="bv-layer" id="bvl-cognitive" style="border-color:#2a1a4f">
+      <div class="bv-layer-title" style="color:var(--purple)">⬡ Modular Cognitive Loop</div>
+      <div class="bv-layer-sub">Internal Cognitive Plugins</div>
+    </div>
+    <div class="bv-arrow">
+      <div class="bv-arrow-labels"><span>Perception Signals</span><span>Control Signals</span></div>
+      <div class="bv-arrow-line">↓</div>
+    </div>
+
+    <!-- Layer 2: Truthfulness Boundary -->
+    <div class="bv-layer" id="bvl-boundary" style="border-color:#2d2a1a">
+      <div class="bv-layer-title" style="color:var(--yellow)">⬡ Truthfulness Boundary</div>
+    </div>
+    <div class="bv-arrow">
+      <div class="bv-arrow-labels"><span style="flex:1;text-align:center;font-style:italic">Strict IPC / Isolation Barrier</span></div>
+      <div class="bv-arrow-line">↓</div>
+    </div>
+
+    <!-- Layer 3: External Execution -->
+    <div class="bv-layer" id="bvl-execution" style="border-color:#1a4731">
+      <div class="bv-layer-title" style="color:var(--green)">⬡ External Execution Layer</div>
+      <div class="bv-layer-sub">CLI · MCP · Agent Tools</div>
+    </div>
+
+    <div style="margin-top:auto;padding-top:16px">
+      <div id="system-prompt-preview" style="font-size:11px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:12px"></div>
+    </div>
+  </div>
+
+  <!-- Weight panels (right) -->
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px">
+
+    <!-- Cognitive Loop weights -->
+    <div class="card">
+      <div class="section-header">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--purple);flex-shrink:0"></div>
+        <span class="section-title">Cognitive Loop Weights</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">— internal, pre-execution</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="bw-cognitive"></div>
+    </div>
+
+    <!-- Truthfulness Boundary weights -->
+    <div class="card">
+      <div class="section-header">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--yellow);flex-shrink:0"></div>
+        <span class="section-title">Truthfulness Boundary</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">— control signals gate</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="bw-boundary"></div>
+    </div>
+
+    <!-- External Execution weights -->
+    <div class="card">
+      <div class="section-header">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0"></div>
+        <span class="section-title">External Execution Layer</span>
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">— injected into agent system prompt</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="bw-execution"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TELEMETRY -->
+<div class="view" id="telemetry-view">
+  <div class="metrics-row">
+    <div class="metric-box"><div class="metric-val" id="m-events">—</div><div class="metric-lbl">Events</div></div>
+    <div class="metric-box"><div class="metric-val" id="m-metrics">—</div><div class="metric-lbl">Metrics</div></div>
+    <div class="metric-box"><div class="metric-val" id="m-completed">—</div><div class="metric-lbl">Completed</div></div>
+    <div class="metric-box"><div class="metric-val" id="m-failed">—</div><div class="metric-lbl">Failed</div></div>
+  </div>
+  <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0">
+    <div class="section-header"><span class="section-title">Events</span><button class="btn btn-secondary btn-sm ml-auto" onclick="loadTelemetry()">Refresh</button></div>
+    <div id="events-list" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
+</main>
+<script>
+const B='';let activeView='builder',selectedAgent='assistant',sessionId=crypto.randomUUID(),ws=null;
+const _KW={echo:'{"message":"hello"}',sleep:'{"seconds":1}',compute:'{"numbers":[1,2,3,4,5]}',assistant:'{}',router:'{}',youtube_learner:'{"url":"https://www.youtube.com/watch?v=dQw4w9WgXcQ","subject":"rickroll"}'};
+function fillKwargs(v){const el=document.getElementById('run-kwargs');if(el)el.value=_KW[v]||'{}';};
+let nodes=[],edges=[],selectedNodeId=null,dragState=null,connectState=null,currentWorkflowId=null;
+const NC={start:{bg:'#1a4731',fg:'var(--green)',icon:'▶'},memory_retrieval:{bg:'#2a1a4f',fg:'var(--purple)',icon:'⧖'},agent:{bg:'#1a2d4f',fg:'var(--blue)',icon:'⚙'},outcome_judgment:{bg:'#2d2a1a',fg:'var(--yellow)',icon:'⚖'},condition:{bg:'#21262d',fg:'var(--text2)',icon:'◇'},loop:{bg:'#21262d',fg:'var(--text2)',icon:'↺'},human_approval:{bg:'#3d1a1a',fg:'var(--red)',icon:'✋'},fail_branch:{bg:'#3d1a1a',fg:'var(--red)',icon:'⚠'},safla_consolidation:{bg:'#1a2d4f',fg:'var(--blue)',icon:'∑'}};
+function uid(){return Math.random().toString(36).slice(2,9)}
+
+function show(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById(v+'-view').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>b.classList.toggle('active',['builder','memory','chat','jobs','behavior','telemetry'][i]===v));
+  activeView=v;
+  if(v==='memory')loadMemory();if(v==='jobs'){loadJobs();loadAgentTypes();}if(v==='telemetry')loadTelemetry();if(v==='chat')loadAgentTypes();if(v==='behavior')loadBehavior();
+}
+
+async function checkHealth(){try{const d=await fetch(B+'/health').then(r=>r.json());document.getElementById('status-dot').style.background='var(--green)';document.getElementById('version-badge').textContent='v'+d.version;}catch{document.getElementById('status-dot').style.background='var(--red)';}}
+
+/* ── BUILDER ── */
+function createNodeEl(n){
+  const c=NC[n.type]||NC.agent;
+  const el=document.createElement('div');el.className='wf-node';el.id='node-'+n.id;
+  el.style.left=n.x+'px';el.style.top=n.y+'px';
+  el.innerHTML=`<div class="wf-node-header"><div class="node-icon" style="background:${c.bg};color:${c.fg};width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px">${c.icon}</div><div><div class="wf-node-title">${n.label||n.type.replace(/_/g,' ')}</div><div class="wf-node-type">${n.type}</div></div></div><div class="wf-port in" id="port-in-${n.id}"></div><div class="wf-port out" id="port-out-${n.id}"></div>`;
+  el.addEventListener('mousedown',e=>{if(e.target.classList.contains('wf-port'))return;e.stopPropagation();selectNode(n.id);const w=document.getElementById('canvas-wrap'),r=w.getBoundingClientRect();dragState={node:n,sx:e.clientX-r.left-n.x,sy:e.clientY-r.top-n.y};});
+  el.querySelector('.wf-port.out').addEventListener('mousedown',e=>{e.stopPropagation();const w=document.getElementById('canvas-wrap'),r=w.getBoundingClientRect();connectState={sourceId:n.id,mouseX:e.clientX-r.left,mouseY:e.clientY-r.top};});
+  return el;
+}
+function addNode(type,x,y){
+  const def={agent:{agent_type:'assistant'},memory_retrieval:{top_k:5},human_approval:{prompt:'Review required',timeout:300},safla_consolidation:{branch:'both'}};
+  const n={id:uid(),type,label:type.replace(/_/g,' '),config:def[type]||{},x,y};
+  n.el=createNodeEl(n);nodes.push(n);document.getElementById('wf-canvas').appendChild(n.el);selectNode(n.id);return n;
+}
+function removeNode(id){
+  const i=nodes.findIndex(n=>n.id===id);if(i<0)return;
+  nodes[i].el.remove();nodes.splice(i,1);edges=edges.filter(e=>e.source!==id&&e.target!==id);redrawEdges();
+  if(selectedNodeId===id){selectedNodeId=null;renderInspector(null);}
+}
+document.addEventListener('mousemove',e=>{
+  if(dragState){const w=document.getElementById('canvas-wrap'),r=w.getBoundingClientRect();dragState.node.x=e.clientX-r.left-dragState.sx;dragState.node.y=e.clientY-r.top-dragState.sy;dragState.node.el.style.left=dragState.node.x+'px';dragState.node.el.style.top=dragState.node.y+'px';redrawEdges();}
+  if(connectState){const w=document.getElementById('canvas-wrap'),r=w.getBoundingClientRect();connectState.mouseX=e.clientX-r.left;connectState.mouseY=e.clientY-r.top;redrawEdges();}
+});
+document.addEventListener('mouseup',e=>{
+  if(dragState)dragState=null;
+  if(connectState){const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.classList.contains('wf-port')&&el.classList.contains('in')){const tid=el.id.replace('port-in-','');if(tid!==connectState.sourceId)addEdge(connectState.sourceId,tid,null);}connectState=null;redrawEdges();}
+});
+function addEdge(s,t,c){if(edges.find(e=>e.source===s&&e.target===t))return;edges.push({id:uid(),source:s,target:t,condition:c});redrawEdges();}
+function redrawEdges(){
+  const svg=document.getElementById('edges-svg');svg.innerHTML='';
+  const w=document.getElementById('canvas-wrap'),wr=w.getBoundingClientRect();
+  for(const e of edges){
+    const se=document.getElementById('port-out-'+e.source),te=document.getElementById('port-in-'+e.target);if(!se||!te)continue;
+    const sr=se.getBoundingClientRect(),tr=te.getBoundingClientRect();
+    const x1=sr.left-wr.left+5,y1=sr.top-wr.top+5,x2=tr.left-wr.left+5,y2=tr.top-wr.top+5;
+    const cls='edge-line'+(e.condition==='success'?' success':e.condition==='failure'?' failure':'');
+    svg.innerHTML+=`<path class="${cls}" d="${mkp(x1,y1,x2,y2)}" style="pointer-events:stroke;cursor:pointer" onclick="selEdge('${e.id}')"/>`;
+    if(e.condition){const mx=(x1+x2)/2,my=(y1+y2)/2,col=e.condition==='success'?'var(--green)':e.condition==='failure'?'var(--red)':'var(--muted)';svg.innerHTML+=`<text x="${mx}" y="${my-6}" font-size="10" fill="${col}" text-anchor="middle">${e.condition}</text>`;}
+  }
+  if(connectState){const se=document.getElementById('port-out-'+connectState.sourceId);if(se){const sr=se.getBoundingClientRect();svg.innerHTML+=`<path class="edge-line" d="${mkp(sr.left-wr.left+5,sr.top-wr.top+5,connectState.mouseX,connectState.mouseY)}" stroke-dasharray="5"/>`;}}
+}
+function mkp(x1,y1,x2,y2){const cx=(x1+x2)/2;return `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`;}
+function selEdge(id){const e=edges.find(x=>x.id===id);if(!e)return;const c=prompt('Edge condition (blank=always, success, failure)',e.condition||'');if(c!==null){e.condition=c.trim()||null;redrawEdges();}}
+document.querySelectorAll('.palette-item').forEach(item=>item.addEventListener('dragstart',e=>e.dataTransfer.setData('nodeType',item.dataset.type)));
+document.getElementById('canvas-wrap').addEventListener('dragover',e=>e.preventDefault());
+document.getElementById('canvas-wrap').addEventListener('drop',e=>{e.preventDefault();const t=e.dataTransfer.getData('nodeType');if(!t)return;const w=document.getElementById('canvas-wrap'),r=w.getBoundingClientRect();addNode(t,e.clientX-r.left-70,e.clientY-r.top-30);});
+document.getElementById('canvas-wrap').addEventListener('mousedown',e=>{if(e.target===document.getElementById('canvas-wrap')||e.target===document.getElementById('edges-svg'))selectNode(null);});
+function selectNode(id){selectedNodeId=id;nodes.forEach(n=>n.el.classList.toggle('selected',n.id===id));renderInspector(id?nodes.find(n=>n.id===id):null);}
+function renderInspector(n){
+  const b=document.getElementById('inspector-body');
+  if(!n){b.innerHTML='<p style="font-size:12px;color:var(--muted)">Select a node.</p>';return;}
+  b.innerHTML=`<div class="inspector-field"><label>Label</label><input value="${n.label}" oninput="upd('label',this.value)"/></div>
+  <div class="inspector-field"><label>Type</label><input value="${n.type}" disabled style="color:var(--muted)"/></div>
+  <div class="inspector-field"><label>Config (JSON)</label><textarea rows="5" oninput="updCfg(this.value)">${JSON.stringify(n.config,null,2)}</textarea></div>
+  <div class="inspector-field"><label>On Error</label><select onchange="upd('on_error_strategy',this.value)">${['fail-branch','default-value','abort','retry'].map(s=>`<option value="${s}">${s}</option>`).join('')}</select></div>
+  <button class="btn btn-danger btn-sm" onclick="removeNode('${n.id}')">Delete</button>
+  <div class="divider"></div>
+  <div style="font-size:11px;color:var(--muted)">ID: <code style="color:var(--blue)">${n.id}</code><br/>Ref: <code style="color:var(--blue)">{{#${n.id}.output#}}</code></div>`;
+}
+function upd(k,v){const n=nodes.find(x=>x.id===selectedNodeId);if(!n)return;if(k==='label'){n.label=v;n.el.querySelector('.wf-node-title').textContent=v;}}
+function updCfg(v){const n=nodes.find(x=>x.id===selectedNodeId);if(!n)return;try{n.config=JSON.parse(v);}catch{}}
+function canvasToWf(){return{workflow_id:currentWorkflowId||uid(),name:document.getElementById('wf-name-label').textContent,description:'',nodes:nodes.map(n=>({id:n.id,type:n.type,label:n.label,config:n.config,depends_on:edges.filter(e=>e.target===n.id).map(e=>e.source),position:{x:n.x,y:n.y}})),edges:edges.map(e=>({source:e.source,target:e.target,condition:e.condition}))};}
+function loadWfIntoCanvas(wf){
+  clearCanvas();currentWorkflowId=wf.workflow_id;
+  document.getElementById('wf-name-label').textContent=wf.name||'Workflow';
+  for(const n of wf.nodes){const node={id:n.id,type:n.type,label:n.label||n.type.replace(/_/g,' '),config:n.config||{},x:n.position?.x||Math.random()*500,y:n.position?.y||Math.random()*300};node.el=createNodeEl(node);nodes.push(node);document.getElementById('wf-canvas').appendChild(node.el);}
+  for(const e of(wf.edges||[]))edges.push({id:uid(),source:e.source,target:e.target,condition:e.condition});
+  setTimeout(redrawEdges,50);
+}
+function clearCanvas(){nodes.forEach(n=>n.el?.remove());nodes=[];edges=[];document.getElementById('edges-svg').innerHTML='';selectedNodeId=null;renderInspector(null);}
+async function loadWorkflowList(){try{const list=await fetch(B+'/workflows').then(r=>r.json());document.getElementById('wf-list').innerHTML=list.map(w=>`<div class="flex items-center gap-8" style="padding:3px 0"><button class="btn btn-secondary btn-xs" style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="loadWorkflow('${w.workflow_id}')">${w.name}</button><button class="btn btn-danger btn-xs" onclick="deleteWorkflow('${w.workflow_id}')">✕</button></div>`).join('');}catch{}}
+async function loadWorkflow(id){try{const wf=await fetch(B+'/workflows/'+id).then(r=>r.json());loadWfIntoCanvas(wf);}catch(e){alert('Load error: '+e.message);}}
+async function loadDefaultWorkflow(){try{const list=await fetch(B+'/workflows').then(r=>r.json());if(list.length>0)await loadWorkflow(list[0].workflow_id);}catch{}}
+async function saveWorkflow(){const wf=canvasToWf();try{const r=await fetch(B+'/workflows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:wf.name,dsl_yaml:wfToYaml(wf)})});const d=await r.json();currentWorkflowId=d.workflow_id;await loadWorkflowList();}catch(e){alert('Save error: '+e.message);}}
+async function newWorkflow(){clearCanvas();currentWorkflowId=null;document.getElementById('wf-name-label').textContent='New Workflow';}
+async function deleteWorkflow(id){await fetch(B+'/workflows/'+id,{method:'DELETE'});loadWorkflowList();}
+async function runCurrentWorkflow(){
+  if(!currentWorkflowId){alert('Save the workflow first.');return;}
+  const msg=prompt('Input message:','Hello');if(msg===null)return;
+  const toast=document.getElementById('run-toast'),ts=document.getElementById('run-toast-status'),tb=document.getElementById('run-toast-body');
+  ts.className='pill pill-blue';ts.textContent='running';tb.textContent='Starting…';toast.style.display='block';
+  try{const r=await fetch(B+'/workflows/'+currentWorkflowId+'/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({inputs:{message:msg}})});const d=await r.json();const sc=d.status==='completed'?'pill-green':d.status==='failed'?'pill-red':'pill-yellow';ts.className='pill '+sc;ts.textContent=d.status;tb.textContent=JSON.stringify(d,null,2);}
+  catch(e){ts.className='pill pill-red';ts.textContent='error';tb.textContent=e.message;}
+}
+function wfToYaml(wf){
+  const L=[`schema_version: "1.0"`,`id: ${wf.workflow_id}`,`name: "${wf.name}"`,`description: ""`,`flow_state: {}`,`nodes:`];
+  for(const n of wf.nodes){L.push(`  - id: ${n.id}`,`    type: ${n.type}`,`    label: "${n.label}"`,`    config: ${JSON.stringify(n.config)}`,`    depends_on: [${n.depends_on.map(d=>`"${d}"`).join(', ')}]`,`    position: {x: ${(n.position.x||0).toFixed(0)}, y: ${(n.position.y||0).toFixed(0)}}`);}
+  L.push(`edges:`);for(const e of wf.edges){L.push(`  - from: ${e.source}`,`    to: ${e.target}`);if(e.condition)L.push(`    condition: ${e.condition}`);}
+  return L.join('\n');
+}
+function toggleDslModal(){const m=document.getElementById('dsl-modal');m.style.display=m.style.display==='flex'?'none':'flex';if(m.style.display==='flex')document.getElementById('dsl-textarea').value=wfToYaml(canvasToWf());}
+async function importDSL(){const yaml=document.getElementById('dsl-textarea').value;try{const r=await fetch(B+'/workflows',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Imported',dsl_yaml:yaml})});const d=await r.json();await loadWorkflow(d.workflow_id);document.getElementById('dsl-modal').style.display='none';loadWorkflowList();}catch(e){alert('Import error: '+e.message);}}
+
+/* ── MEMORY ── */
+let memTier='overview',memData=null;
+function showMemTier(t){memTier=t;document.querySelectorAll('.mem-nav-btn').forEach((b,i)=>b.classList.toggle('active',['overview','associative','temporal','experiential','guardrails','working'][i]===t));renderMemory();}
+async function loadMemory(){
+  try{const[ov,as,tm,ex,wk]=await Promise.all([fetch(B+'/memory').then(r=>r.json()),fetch(B+'/memory/associative').then(r=>r.json()),fetch(B+'/memory/temporal').then(r=>r.json()),fetch(B+'/memory/experiential').then(r=>r.json()),fetch(B+'/memory/working').then(r=>r.json())]);
+  memData={ov,as,tm,ex,wk};renderMemory();}catch{}
+}
+function renderMemory(){
+  const main=document.getElementById('memory-main');if(!memData){main.innerHTML='<p class="empty">Loading…</p>';return;}
+  const{ov,as,tm,ex,wk}=memData;
+  if(memTier==='overview'){
+    main.innerHTML=`<div class="flex gap-12" style="flex-wrap:wrap">
+      ${mcrd('Associative (A-Mem)',ov.associative.count,'var(--purple)','Zettelkasten graph nodes, semantic auto-wiring.')}
+      ${mcrd('Temporal KG',ov.temporal.count,'var(--blue)','Directed event graph, time-decayed edge weights.')}
+      ${mcrd('Experiential',ov.experiential.count,'var(--yellow)',`${ov.experiential.strategies} strategies · ${ov.experiential.guardrails} guardrails`)}
+      ${mcrd('Working Context',ov.working.count,'var(--green)',`${(ov.working.utilization*100).toFixed(0)}% utilized · ${ov.working.subgoals} subgoals`)}</div>
+      <div class="card"><div class="section-header"><span class="section-title">Add Memory Item</span></div>
+      <div class="flex gap-12" style="flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:0 0 130px"><label>Tier</label><select id="new-mem-tier"><option value="associative">Associative</option><option value="temporal">Temporal</option><option value="experiential">Experiential</option></select></div>
+        <div style="flex:1;min-width:180px"><label>Title</label><input id="new-mem-title" placeholder="Strategy or event title"/></div>
+        <div style="flex:2;min-width:200px"><label>Content</label><textarea id="new-mem-content" rows="2" placeholder="Procedural content…"></textarea></div>
+        <button class="btn btn-primary" onclick="addMemItem()">Add</button></div></div>`;return;
+  }
+  let items=[],title='';
+  if(memTier==='associative'){items=as;title='Associative Memory';}
+  if(memTier==='temporal'){items=tm;title='Temporal Knowledge Graph';}
+  if(memTier==='experiential'){items=ex.filter(i=>!i.is_guardrail);title='Experiential Strategies';}
+  if(memTier==='guardrails'){items=ex.filter(i=>i.is_guardrail);title='Behavioral Guardrails';}
+  if(memTier==='working'){
+    main.innerHTML=`<div class="section-header"><span class="section-title">Working Context</span><button class="btn btn-danger btn-sm ml-auto" onclick="clearWorking()">Clear</button></div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--muted)">${wk.items.length} items · ${(wk.utilization*100).toFixed(0)}% utilization</div>
+    <div class="mem-grid">${wk.items.map(miCard).join('')}</div>
+    <div class="divider"></div>
+    <div class="section-header"><span class="section-title">Subgoal Tree</span></div>
+    ${wk.subgoals.length===0?'<p class="empty">No active subgoals.</p>':wk.subgoals.map(sg=>`<div class="flex items-center gap-8" style="padding:6px 0;border-bottom:1px solid var(--border)"><span class="pill ${sg.status==='completed'?'pill-green':'pill-yellow'}">${sg.status}</span><span style="font-size:13px">${sg.goal}</span></div>`).join('')}`;return;
+  }
+  main.innerHTML=`<div class="section-header"><span class="section-title">${title}</span><span style="font-size:12px;color:var(--muted);margin-left:8px">${items.length} items</span></div>${items.length===0?'<p class="empty">No items yet.</p>':'<div class="mem-grid">'+items.map(miCard).join('')+'</div>'}`;
+}
+function mcrd(name,count,color,desc){return `<div class="card" style="flex:1;min-width:160px"><div style="font-size:26px;font-weight:700;color:${color}">${count}</div><div style="font-size:13px;font-weight:600;color:var(--text2);margin-top:2px">${name}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${desc}</div></div>`;}
+function miCard(item){
+  const c=item.confidence||0,cc=c>=.65?'conf-high':c>=.35?'conf-mid':'conf-low';
+  const tl=item.kind==='guardrail'?'negative guardrail':(item.kind==='strategy'?'strategy':(item.is_guardrail?'guardrail':(item.tier||'item'))),tc=(item.kind==='guardrail'||item.is_guardrail)?'pill-red':'pill-blue';
+  return `<div class="mem-card"><div class="mem-card-title"><span class="pill ${tc}">${tl}</span>${item.title}</div>
+  <div class="mem-card-content">${(item.content||'').slice(0,120)}${(item.content||'').length>120?'…':''}</div>
+  <div class="safla-bar" style="margin-bottom:8px"><span style="font-size:11px;color:var(--muted);width:60px">Conf: ${(c*100).toFixed(0)}%</span><div class="safla-track"><div class="safla-fill ${cc}" style="width:${c*100}%"></div></div></div>
+  <div class="mem-tags">${(item.tags||[]).filter(t=>!(tl==='negative guardrail'&&t==='failure')).map(t=>`<span class="mem-tag">${t}</span>`).join('')}${item.usage_count!==undefined?`<span class="mem-tag">used ${item.usage_count}×</span>`:''}</div>
+  <div class="flex gap-8" style="margin-top:8px"><button class="btn btn-secondary btn-xs" onclick="saflaDo('${item.item_id}','success')">✓</button><button class="btn btn-danger btn-xs" onclick="saflaDo('${item.item_id}','failure')">✗</button></div></div>`;
+}
+async function addMemItem(){
+  const tier=document.getElementById('new-mem-tier').value,title=document.getElementById('new-mem-title').value.trim(),content=document.getElementById('new-mem-content').value.trim();
+  if(!title){alert('Title required');return;}
+  const url=tier==='experiential'?B+'/memory/experiential':B+'/memory/'+tier;
+  const body=tier==='experiential'?{title,description:'',content,outcome:'success'}:{tier,title,content};
+  await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});loadMemory();
+}
+async function saflaDo(id,outcome){await fetch(B+'/memory/experiential/safla',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item_id:id,outcome})});loadMemory();}
+async function consolidateMem(){const r=await fetch(B+'/memory/experiential/consolidate',{method:'POST'});const d=await r.json();alert(`Removed ${d.removed} low-confidence strategies.`);loadMemory();}
+async function clearWorking(){await fetch(B+'/memory/working',{method:'DELETE'});loadMemory();}
+
+/* ── CHAT ── */
+let pendingChatImage=null;
+function newSession(){sessionId=crypto.randomUUID();document.getElementById('session-label').textContent=sessionId.slice(0,8)+'…';document.getElementById('messages').innerHTML='<div class="msg system">New session.</div>';connectWS();}
+function connectWS(){if(ws){ws.close();ws=null;}const p=location.protocol==='https:'?'wss':'ws';try{ws=new WebSocket(`${p}://${location.host}/chat/ws/${sessionId}?agent_type=${selectedAgent}`);ws.onmessage=e=>{const d=JSON.parse(e.data);aMsg('assistant',d.reply);};}catch{}}
+function aMsg(r,t){const b=document.getElementById('messages'),d=document.createElement('div');d.className='msg '+r;d.textContent=t;b.appendChild(d);b.scrollTop=b.scrollHeight;}
+function renderChatImagePreview(){const p=document.getElementById('chat-upload-preview');if(!pendingChatImage){p.style.display='none';p.innerHTML='';return;}p.style.display='flex';p.innerHTML=`<img src="${pendingChatImage.url}" alt="upload preview"/><span>${pendingChatImage.name}</span><button class="btn btn-secondary btn-xs" onclick="clearChatImage()">Clear</button>`;}
+function clearChatImage(){pendingChatImage=null;document.getElementById('chat-image-input').value='';renderChatImagePreview();}
+async function uploadChatImage(event){const file=event.target.files&&event.target.files[0];if(!file)return;const fd=new FormData();fd.append('file',file);try{const r=await fetch(B+'/uploads/image',{method:'POST',body:fd});const d=await r.json();if(!r.ok)throw new Error(d.detail||'Upload failed');pendingChatImage={url:d.url,name:file.name};renderChatImagePreview();}catch(e){aMsg('system','[Upload error: '+e.message+']');clearChatImage();}}
+async function sendChat(){const i=document.getElementById('msg-input');let m=i.value.trim();if(!m&&!pendingChatImage)return;if(pendingChatImage){m=(m?m+'\n':'')+`Attached image: ${location.origin}${pendingChatImage.url}`;}i.value='';aMsg('user',m||'[Image uploaded]');clearChatImage();
+  if(ws&&ws.readyState===WebSocket.OPEN){ws.send(m);}else{try{const r=await fetch(B+'/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:sessionId,agent_type:selectedAgent,message:m})});const d=await r.json();aMsg('assistant',d.reply);}catch(e){aMsg('system','[Error: '+e.message+']');}}}
+
+/* ── AGENTS ── */
+async function loadAgentTypes(){try{const t=await fetch(B+'/agents/types').then(r=>r.json());
+  const ch=document.getElementById('agent-chips');if(ch)ch.innerHTML=t.map(x=>`<button class="agent-chip${x===selectedAgent?' active':''}" data-agent="${x}" onclick="pickAgent('${x}')">${x==='assistant'?'Main Brain':x}</button>`).join('');
+  const sl=document.getElementById('run-agent-type');if(sl){sl.innerHTML=t.map(x=>`<option value="${x}">${x}</option>`).join('');fillKwargs(sl.value);}}catch{}}
+function pickAgent(t){selectedAgent=t;document.querySelectorAll('.agent-chip').forEach(b=>b.classList.toggle('active',b.dataset.agent===t));connectWS();}
+
+/* ── JOBS ── */
+async function runAgent(){const at=document.getElementById('run-agent-type').value,p=document.getElementById('run-priority').value;let kw={};try{kw=JSON.parse(document.getElementById('run-kwargs').value||'{}');}catch{}
+  const b=document.getElementById('run-result');b.style.display='block';b.textContent='Running…';
+  try{b.textContent=JSON.stringify(await fetch(B+'/agents/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_type:at,kwargs:kw,priority:p})}).then(r=>r.json()),null,2);}catch(e){b.textContent='Error: '+e.message;}}
+async function enqueueJob(){const at=document.getElementById('run-agent-type').value,p=document.getElementById('run-priority').value;let kw={};try{kw=JSON.parse(document.getElementById('run-kwargs').value||'{}');}catch{}
+  await fetch(B+'/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent_type:at,kwargs:kw,priority:p})});loadJobs();}
+async function loadJobs(){try{const jobs=await fetch(B+'/jobs?limit=50').then(r=>r.json());const sc={completed:'pill-green',failed:'pill-red',running:'pill-blue',queued:'pill-yellow',cancelled:'pill-grey'};
+  document.getElementById('jobs-tbody').innerHTML=jobs.map(j=>`<tr><td style="font-family:monospace;font-size:11px;color:var(--muted)">${j.job_id.slice(0,8)}…</td><td>${j.agent_type}</td><td>${j.priority}</td><td style="color:var(--yellow)">${(j.weight||0).toFixed(2)}</td><td><span class="pill ${sc[j.status]||'pill-grey'}">${j.status}</span></td><td>${j.duration_ms?j.duration_ms.toFixed(1)+'ms':'—'}</td><td style="color:var(--red);font-size:11px">${j.error||''}</td></tr>`).join('');}catch{}}
+async function runPipeline(){let s;const b=document.getElementById('pipeline-result');b.style.display='block';try{s=JSON.parse(document.getElementById('pipeline-json').value);}catch(e){b.textContent='Invalid JSON: '+e.message;return;}b.textContent='Running…';try{b.textContent=JSON.stringify(await fetch(B+'/jobs/pipelines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'UI Pipeline',steps:s})}).then(r=>r.json()),null,2);}catch(e){b.textContent='Error: '+e.message;}}
+
+/* ── BEHAVIOR ── */
+const BW={
+  cognitive:[
+    {key:'safla_learning_rate',   label:'SAFLA Learning Rate α',  min:.01,max:.5, step:.01,desc:'α in c_{t+1} = c_t + α·r_t  Controls how fast confidence updates per feedback cycle.'},
+    {key:'safla_confidence_floor',label:'Confidence Floor',        min:.01,max:.3, step:.01,desc:'Minimum confidence before a strategy is retired and a guardrail is extracted.'},
+    {key:'retrieval_similarity',  label:'Retrieval α_q (Similarity)',min:0,max:1,step:.05,desc:'Token similarity weight in R(q,m) = α_q·sim + α_c·conf + α_u·usage'},
+    {key:'retrieval_confidence',  label:'Retrieval α_c (Confidence)',min:0,max:1,step:.05,desc:'Confidence score weight in the composite memory relevance formula.'},
+    {key:'retrieval_usage',       label:'Retrieval α_u (Usage)',   min:0,max:1, step:.05,desc:'Usage statistics weight in the composite memory relevance formula.'},
+  ],
+  boundary:[
+    {key:'truthfulness_weight',   label:'Truthfulness Weight',     min:0,max:1, step:.05,desc:'Enforces the Truthfulness Boundary — no fabricated responses pass through at 1.0.'},
+    {key:'refusal_threshold',     label:'Refusal Threshold',       min:0,max:1, step:.05,desc:'Cognitive loop gate: agent refuses or pauses requests below this confidence level.'},
+  ],
+  execution:[
+    {key:'safety_weight',         label:'Safety Weight',           min:0,max:1, step:.05,desc:'Injects safety constraints into the agent system prompt. 1.0 = maximum enforcement.'},
+    {key:'factuality_weight',     label:'Factuality Weight',       min:0,max:1, step:.05,desc:'Biases the agent toward grounded, verifiable responses. Injected into system prompt.'},
+    {key:'temperature',           label:'Temperature',             min:0,max:2, step:.05,desc:'LLM generation creativity. 0=deterministic, 1=balanced, 2=highly creative.'},
+    {key:'max_tokens',            label:'Max Tokens',              min:64,max:4096,step:64,desc:'Maximum output tokens per LLM call. Controls response length.'},
+  ],
+};
+function bwCard(f,val){
+  return `<div class="bw-card"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><span class="bw-label">${f.label}</span><span class="bw-val" id="bval-${f.key}">${Number(val).toFixed(f.step<1?2:0)}</span></div><p class="bw-desc">${f.desc}</p><input type="range" style="width:100%;accent-color:var(--blue-btn)" min="${f.min}" max="${f.max}" step="${f.step}" value="${val}" oninput="document.getElementById('bval-${f.key}').textContent=Number(this.value).toFixed(${f.step<1?2:0})" onchange="saveBehavior('${f.key}',this.value)"/><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px"><span>${f.min}</span><span>${f.max}</span></div></div>`;
+}
+async function loadBehavior(){
+  try{
+    const d=await fetch(B+'/config/behavior').then(r=>r.json());
+    document.getElementById('bw-cognitive').innerHTML=BW.cognitive.map(f=>bwCard(f,d[f.key]??0)).join('');
+    document.getElementById('bw-boundary').innerHTML=BW.boundary.map(f=>bwCard(f,d[f.key]??0)).join('');
+    document.getElementById('bw-execution').innerHTML=BW.execution.map(f=>bwCard(f,d[f.key]??0)).join('');
+    document.getElementById('system-prompt-preview').textContent=d.system_prompt_preview;
+  }catch{}
+}
+async function saveBehavior(key,val){
+  const ind=document.getElementById('bw-save-indicator');
+  try{
+    const d=await fetch(B+'/config/behavior',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({[key]:parseFloat(val)})}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});
+    document.getElementById('system-prompt-preview').textContent=d.system_prompt_preview;
+    if(ind){ind.textContent='Saved';ind.style.color='var(--green)';setTimeout(()=>ind.textContent='',1500);}
+  }catch(e){if(ind){ind.textContent='Error: '+e.message;ind.style.color='var(--red)';}}
+}
+async function resetBehavior(){await fetch(B+'/config/behavior/reset',{method:'POST'});loadBehavior();}
+/* ── TELEMETRY ── */
+async function loadTelemetry(){try{const[st,ev]=await Promise.all([fetch(B+'/telemetry/stats').then(r=>r.json()),fetch(B+'/telemetry/events?limit=40').then(r=>r.json())]);
+  document.getElementById('m-events').textContent=st.total_events;document.getElementById('m-metrics').textContent=st.total_metrics;
+  const bt=st.by_type||{};document.getElementById('m-completed').textContent=bt['agent.complete']||0;document.getElementById('m-failed').textContent=bt['agent.failed']||0;
+  document.getElementById('events-list').innerHTML=[...ev].reverse().map(e=>`<div class="event-row"><span class="ev-type">${e.event_type}</span><span class="ev-time">${new Date(e.timestamp).toLocaleTimeString()}</span><span class="ev-data">${JSON.stringify(e.payload)}</span></div>`).join('');}catch{}}
+
+/* ── INIT ── */
+(async()=>{
+  document.getElementById('session-label').textContent=sessionId.slice(0,8)+'…';
+  await checkHealth();await loadAgentTypes();await loadWorkflowList();await loadDefaultWorkflow();connectWS();
+  setInterval(checkHealth,15000);
+  setInterval(()=>{if(activeView==='telemetry')loadTelemetry();},5000);
+  setInterval(()=>{if(activeView==='jobs')loadJobs();},5000);
+})();
+</script>
+</body>
+</html>
